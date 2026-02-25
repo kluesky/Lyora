@@ -1,27 +1,31 @@
 -- =========================================================
--- LYORA SIMPLE GUI + DISCORD KEY SYSTEM (FIX MINIMIZE)
+-- ULTRA SMART AUTO KATA + CUSTOM GUI + PASTEFY KEY SYSTEM
 -- =========================================================
 
--- 1. SERVICES
+if game:IsLoaded() == false then
+    game.Loaded:Wait()
+end
+
+-- =========================
+-- SERVICES
+-- =========================
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- 2. KONFIGURASI BOT DISCORD (GANTI INI!)
-local DISCORD_CONFIG = {
-    apiUrl = "http://localhost:3000",  -- GANTI dengan URL bot lu
-    botToken = "",  -- Token bot
-    inviteCode = "YOUR_INVITE_CODE"  -- GANTI dengan invite code Discord lu
-}
+-- =========================
+-- PASTEFY KEY SYSTEM
+-- =========================
+local PASTE_ID = "EvFSBcDy"  -- << GANTI DENGAN ID PASTE LU!
+local DISCORD_INVITE = "cvaHe2rXnk"  -- GANTI DENGAN INVITE DISCORD LU
 
--- 3. DATA USER
 local userData = {
-    userId = LocalPlayer.UserId,
+    userId = tostring(LocalPlayer.UserId),
     username = LocalPlayer.Name,
-    displayName = LocalPlayer.DisplayName,
     key = "",
     isVerified = false,
     discordUser = "",
@@ -29,46 +33,49 @@ local userData = {
     premium = false
 }
 
--- =========================================================
--- FUNGSI API KE BOT DISCORD
--- =========================================================
-
-local function callDiscordAPI(endpoint, data)
+local function verifyKey(key)
+    if not key:match("^LYORA%-%w%w%w%w%-%w%w%w%w$") then
+        return { valid = false, message = "❌ Format key salah! Harus LYORA-XXXX-XXXX" }
+    end
+    
     local success, response = pcall(function()
-        local headers = {
-            ["Content-Type"] = "application/json",
-            ["Authorization"] = "Bot " .. DISCORD_CONFIG.botToken
-        }
-        
-        local body = HttpService:JSONEncode(data)
-        
-        return HttpService:PostAsync(
-            DISCORD_CONFIG.apiUrl .. endpoint,
-            body,
-            Enum.HttpContentType.ApplicationJson,
-            false,
-            headers
-        )
+        return game:HttpGet("https://pastefy.app/raw/" .. PASTE_ID)
     end)
     
-    if success then
-        return true, HttpService:JSONDecode(response)
+    if not success then
+        return { valid = false, message = "❌ Gagal memuat database key" }
     end
-    return false, {message = "Gagal konek ke server"}
+    
+    local db = HttpService:JSONDecode(response)
+    local keyData = db.keys and db.keys[key]
+    
+    if not keyData then
+        return { valid = false, message = "❌ Key tidak terdaftar!" }
+    end
+    
+    if os.time() * 1000 > keyData.expiresAt then
+        return { valid = false, message = "⏰ Key sudah expired! (3 jam)" }
+    end
+    
+    if keyData.userId ~= userData.userId then
+        return { valid = false, message = "❌ User ID tidak cocok!" }
+    end
+    
+    if keyData.used then
+        return { valid = false, message = "❌ Key sudah digunakan!" }
+    end
+    
+    return {
+        valid = true,
+        discordUser = keyData.discordUser,
+        expiresAt = keyData.expiresAt,
+        message = "✅ Selamat datang " .. keyData.discordUser .. "!"
+    }
 end
 
-local function verifyKey(key)
-    return callDiscordAPI("/verify-key", {
-        userId = tostring(userData.userId),
-        username = userData.username,
-        key = key
-    })
-end
-
--- =========================================================
--- MEMBUAT GUI (PASTI MUNCUL!)
--- =========================================================
-
+-- =========================
+-- CREATE KEY GUI
+-- =========================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = PlayerGui
 ScreenGui.Name = "LyoraGUI"
@@ -84,9 +91,8 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
-MainFrame.ClipsDescendants = true  -- PENTING: biar pas minimize isinya keclip
+MainFrame.ClipsDescendants = true
 
--- Corner
 local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 10)
 Corner.Parent = MainFrame
@@ -161,10 +167,7 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 8)
 MinCorner.Parent = MinBtn
 
--- =========================================================
--- CONTENT FRAME (SEMUA ISI DILETAKKAN DI SINI)
--- =========================================================
-
+-- CONTENT FRAME
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Parent = MainFrame
 ContentFrame.Size = UDim2.new(1, -20, 1, -70)
@@ -177,37 +180,27 @@ local ContentCorner = Instance.new("UICorner")
 ContentCorner.CornerRadius = UDim.new(0, 8)
 ContentCorner.Parent = ContentFrame
 
--- =========================================================
--- FUNGSI MINIMIZE (FIX!)
--- =========================================================
-
+-- MINIMIZE FUNCTION
 local minimized = false
 local originalSize = MainFrame.Size
-local originalContentVisible = true
 
 MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
-    
     if minimized then
-        -- Minimize: kecilin frame, sembunyiin content
         MainFrame:TweenSize(UDim2.new(0, 450, 0, 50), "Out", "Quad", 0.2, true)
         ContentFrame.Visible = false
         MinBtn.Text = "□"
         MinBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
     else
-        -- Maximize: balikin ukuran, munculin content
         MainFrame:TweenSize(originalSize, "Out", "Quad", 0.2, true)
-        task.wait(0.2)  -- Tunggu animasi selesai
+        task.wait(0.2)
         ContentFrame.Visible = true
         MinBtn.Text = "—"
         MinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     end
 end)
 
--- =========================================================
--- AVATAR SECTION (SESUAI SCREENSHOT)
--- =========================================================
-
+-- AVATAR SECTION
 local AvatarFrame = Instance.new("Frame")
 AvatarFrame.Parent = ContentFrame
 AvatarFrame.Size = UDim2.new(1, -20, 0, 80)
@@ -231,7 +224,7 @@ local AvatarImgCorner = Instance.new("UICorner")
 AvatarImgCorner.CornerRadius = UDim.new(0, 30)
 AvatarImgCorner.Parent = Avatar
 
--- Username (di screenshot: ITZ_Kyluesky)
+-- Username
 local UsernameLabel = Instance.new("TextLabel")
 UsernameLabel.Parent = AvatarFrame
 UsernameLabel.Size = UDim2.new(0, 250, 0, 30)
@@ -243,7 +236,7 @@ UsernameLabel.TextSize = 20
 UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- User ID (di screenshot: ID: 1345368053)
+-- User ID
 local UserIdLabel = Instance.new("TextLabel")
 UserIdLabel.Parent = AvatarFrame
 UserIdLabel.Size = UDim2.new(0, 250, 0, 20)
@@ -255,10 +248,7 @@ UserIdLabel.TextSize = 14
 UserIdLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 UserIdLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- =========================================================
--- KEY INPUT SECTION (SESUAI SCREENSHOT)
--- =========================================================
-
+-- KEY INPUT SECTION
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = ContentFrame
 KeyFrame.Size = UDim2.new(1, -20, 0, 180)
@@ -270,7 +260,7 @@ local KeyCorner = Instance.new("UICorner")
 KeyCorner.CornerRadius = UDim.new(0, 8)
 KeyCorner.Parent = KeyFrame
 
--- Key Title (di screenshot: VERIFIKASI KEY)
+-- Key Title
 local KeyTitle = Instance.new("TextLabel")
 KeyTitle.Parent = KeyFrame
 KeyTitle.Size = UDim2.new(1, -20, 0, 30)
@@ -320,7 +310,7 @@ KeyInput.Font = Enum.Font.Gotham
 KeyInput.TextSize = 14
 KeyInput.ClearTextOnFocus = false
 
--- Verify Button (di screenshot: VERIFIKASI KEY)
+-- Verify Button
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(1, -20, 0, 45)
@@ -336,10 +326,7 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.CornerRadius = UDim.new(0, 6)
 VerifyCorner.Parent = VerifyBtn
 
--- =========================================================
--- DISCORD INFO SECTION (SESUAI SCREENSHOT)
--- =========================================================
-
+-- DISCORD INFO SECTION
 local DiscordFrame = Instance.new("Frame")
 DiscordFrame.Parent = ContentFrame
 DiscordFrame.Size = UDim2.new(1, -20, 0, 140)
@@ -369,7 +356,7 @@ Instructions.Parent = DiscordFrame
 Instructions.Size = UDim2.new(1, -20, 0, 50)
 Instructions.Position = UDim2.new(0, 10, 0, 40)
 Instructions.BackgroundTransparency = 1
-Instructions.Text = "1. Join Discord server\n2. Ketik /getkey " .. LocalPlayer.UserId .. "\n3. Copy key dari bot"
+Instructions.Text = "1. Buka Discord dan ketik /getkey " .. LocalPlayer.UserId .. "\n2. Copy key dari bot\n3. Masukkan key di atas"
 Instructions.Font = Enum.Font.Gotham
 Instructions.TextSize = 12
 Instructions.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -404,7 +391,7 @@ local JoinBtn = Instance.new("TextButton")
 JoinBtn.Parent = ButtonFrame
 JoinBtn.Size = UDim2.new(0, 130, 1, 0)
 JoinBtn.Position = UDim2.new(0, 130, 0, 0)
-JoinBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)  -- Discord color
+JoinBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
 JoinBtn.Text = "🔗 Join Discord"
 JoinBtn.Font = Enum.Font.GothamBold
 JoinBtn.TextSize = 12
@@ -421,7 +408,7 @@ StatusLabel.Parent = ContentFrame
 StatusLabel.Size = UDim2.new(1, -20, 0, 30)
 StatusLabel.Position = UDim2.new(0, 10, 0, 440)
 StatusLabel.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
-StatusLabel.Text = "⏳ Menunggu input key..."
+StatusLabel.Text = "⏳ Masukkan key untuk verifikasi..."
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 12
 StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
@@ -430,10 +417,7 @@ local StatusCorner = Instance.new("UICorner")
 StatusCorner.CornerRadius = UDim.new(0, 6)
 StatusCorner.Parent = StatusLabel
 
--- =========================================================
--- FUNGSI NOTIFIKASI
--- =========================================================
-
+-- NOTIFICATION FUNCTION
 local function showNotification(message, isSuccess)
     local notif = Instance.new("Frame")
     notif.Parent = ScreenGui
@@ -462,10 +446,7 @@ local function showNotification(message, isSuccess)
     notif:Destroy()
 end
 
--- =========================================================
--- FUNGSI VERIFIKASI
--- =========================================================
-
+-- VERIFY BUTTON FUNCTION
 VerifyBtn.MouseButton1Click:Connect(function()
     local key = KeyInput.Text
     if key == "" then
@@ -473,63 +454,251 @@ VerifyBtn.MouseButton1Click:Connect(function()
         return
     end
     
-    StatusLabel.Text = "⏳ Memverifikasi key..."
+    StatusLabel.Text = "⏳ Memverifikasi key ke Pastefy..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
     
-    local success, result = verifyKey(key)
+    local result = verifyKey(key)
     
-    if success and result.valid then
+    if result.valid then
         userData.isVerified = true
         userData.key = key
         userData.discordUser = result.discordUser
-        userData.role = result.role
-        userData.premium = result.premium
         
-        StatusLabel.Text = "✅ VERIFIKASI BERHASIL! Selamat datang " .. userData.discordUser
+        StatusLabel.Text = "✅ " .. result.message
         StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
         
-        showNotification("✅ Verifikasi berhasil! Mengaktifkan fitur...", true)
+        showNotification("✅ Verifikasi berhasil!", true)
         
-        -- GANTI TAMPILAN JADI MAIN MENU
-        loadMainMenu()
+        -- Hapus GUI key dan mulai main GUI
+        task.wait(1)
+        ScreenGui:Destroy()
+        startMainGUI()
         
     else
-        StatusLabel.Text = "❌ Key tidak valid! Coba lagi."
+        StatusLabel.Text = result.message
         StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
-        showNotification("❌ Key salah! Dapatkan key di Discord", false)
+        showNotification(result.message, false)
     end
 end)
 
--- =========================================================
 -- BUTTON FUNCTIONS
--- =========================================================
-
 CopyIdBtn.MouseButton1Click:Connect(function()
-    setclipboard(tostring(LocalPlayer.UserId))
+    setclipboard(userData.userId)
     showNotification("✅ User ID dicopy ke clipboard!", true)
 end)
 
 JoinBtn.MouseButton1Click:Connect(function()
-    setclipboard("https://discord.gg/" .. DISCORD_CONFIG.inviteCode)
+    setclipboard("https://discord.gg/" .. DISCORD_INVITE)
     showNotification("🔗 Link Discord dicopy ke clipboard!", true)
 end)
 
--- =========================================================
--- LOAD MAIN MENU (SETELAH VERIFIKASI)
--- =========================================================
+-- =========================
+-- LOAD WORDLIST
+-- =========================
+local kataModule = {}
 
-function loadMainMenu()
-    -- Bersihkan content frame
-    for _, child in ipairs(ContentFrame:GetChildren()) do
+local function downloadWordlist()
+    local response = game:HttpGet("https://raw.githubusercontent.com/danzzy1we/roblox-script-dump/refs/heads/main/WordListDump/Dump_IndonesianWords.lua")
+    if not response then
+        return false
+    end
+
+    local content = string.match(response, "return%s*(.+)")
+    if not content then
+        return false
+    end
+
+    content = string.gsub(content, "^%s*{", "")
+    content = string.gsub(content, "}%s*$", "")
+
+    for word in string.gmatch(content, '"([^"]+)"') do
+        local w = string.lower(word)
+        if string.len(w) > 1 then
+            table.insert(kataModule, w)
+        end
+    end
+
+    return true
+end
+
+local wordOk = downloadWordlist()
+if not wordOk or #kataModule == 0 then
+    warn("Wordlist gagal dimuat!")
+    return
+end
+
+-- =========================
+-- REMOTES
+-- =========================
+local remotes = ReplicatedStorage:WaitForChild("Remotes")
+
+local MatchUI = remotes:WaitForChild("MatchUI")
+local SubmitWord = remotes:WaitForChild("SubmitWord")
+local BillboardUpdate = remotes:WaitForChild("BillboardUpdate")
+local BillboardEnd = remotes:WaitForChild("BillboardEnd")
+local TypeSound = remotes:WaitForChild("TypeSound")
+local UsedWordWarn = remotes:WaitForChild("UsedWordWarn")
+
+-- =========================
+-- STATE
+-- =========================
+local matchActive = false
+local isMyTurn = false
+local serverLetter = ""
+
+local usedWords = {}
+local usedWordsList = {}
+local opponentStreamWord = ""
+
+local autoEnabled = false
+local autoRunning = false
+
+local config = {
+    minDelay = 350,
+    maxDelay = 650,
+    aggression = 20,
+    minLength = 2,
+    maxLength = 12
+}
+
+-- =========================
+-- LOGIC FUNCTIONS
+-- =========================
+local function isUsed(word)
+    return usedWords[string.lower(word)] == true
+end
+
+local usedWordsDropdown = nil
+
+local function addUsedWord(word)
+    local w = string.lower(word)
+    if usedWords[w] == nil then
+        usedWords[w] = true
+        table.insert(usedWordsList, word)
+        if usedWordsDropdown ~= nil then
+            usedWordsDropdown:Set(usedWordsList)
+        end
+    end
+end
+
+local function resetUsedWords()
+    usedWords = {}
+    usedWordsList = {}
+    if usedWordsDropdown ~= nil then
+        usedWordsDropdown:Set({})
+    end
+end
+
+local function getSmartWords(prefix)
+    local results = {}
+    local lowerPrefix = string.lower(prefix)
+
+    for i = 1, #kataModule do
+        local word = kataModule[i]
+        if string.sub(word, 1, #lowerPrefix) == lowerPrefix then
+            if not isUsed(word) then
+                local len = string.len(word)
+                if len >= config.minLength and len <= config.maxLength then
+                    table.insert(results, word)
+                end
+            end
+        end
+    end
+
+    table.sort(results, function(a,b)
+        return string.len(a) > string.len(b)
+    end)
+
+    return results
+end
+
+local function humanDelay()
+    local min = config.minDelay
+    local max = config.maxDelay
+    if min > max then
+        min = max
+    end
+    task.wait(math.random(min, max) / 1000)
+end
+
+-- =========================
+-- AUTO ENGINE
+-- =========================
+local function startUltraAI()
+    if autoRunning then return end
+    if not autoEnabled then return end
+    if not matchActive then return end
+    if not isMyTurn then return end
+    if serverLetter == "" then return end
+
+    autoRunning = true
+
+    humanDelay()
+
+    local words = getSmartWords(serverLetter)
+    if #words == 0 then
+        autoRunning = false
+        return
+    end
+
+    local selectedWord = words[1]
+
+    if config.aggression < 100 then
+        local topN = math.floor(#words * (1 - config.aggression/100))
+        if topN < 1 then topN = 1 end
+        if topN > #words then topN = #words end
+        selectedWord = words[math.random(1, topN)]
+    end
+
+    local currentWord = serverLetter
+    local remain = string.sub(selectedWord, #serverLetter + 1)
+
+    for i = 1, string.len(remain) do
+        if not matchActive or not isMyTurn then
+            autoRunning = false
+            return
+        end
+
+        currentWord = currentWord .. string.sub(remain, i, i)
+
+        TypeSound:FireServer()
+        BillboardUpdate:FireServer(currentWord)
+
+        humanDelay()
+    end
+
+    humanDelay()
+
+    SubmitWord:FireServer(selectedWord)
+    addUsedWord(selectedWord)
+
+    humanDelay()
+    BillboardEnd:FireServer()
+
+    autoRunning = false
+end
+
+-- =========================
+-- MAIN GUI (CUSTOM DESIGN)
+-- =========================
+function startMainGUI()
+    -- Bersihkan ScreenGui yang lama
+    for _, child in ipairs(ScreenGui:GetChildren()) do
         child:Destroy()
     end
     
     -- Ganti title
     Title.Text = "🎀 LYORA SAMBUNG KATA"
     
+    -- Recreate content frame untuk main GUI
+    local MainContent = Instance.new("Frame")
+    MainContent.Parent = ContentFrame
+    MainContent.Size = UDim2.new(1, 0, 1, 0)
+    MainContent.BackgroundTransparency = 1
+    
     -- Profile Section
     local ProfileFrame = Instance.new("Frame")
-    ProfileFrame.Parent = ContentFrame
+    ProfileFrame.Parent = MainContent
     ProfileFrame.Size = UDim2.new(1, -20, 0, 70)
     ProfileFrame.Position = UDim2.new(0, 10, 0, 10)
     ProfileFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
@@ -561,69 +730,22 @@ function loadMainMenu()
     NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     NameLabel.TextXAlignment = Enum.TextXAlignment.Left
     
-    local RoleLabel = Instance.new("TextLabel")
-    RoleLabel.Parent = ProfileFrame
-    RoleLabel.Size = UDim2.new(0, 200, 0, 20)
-    RoleLabel.Position = UDim2.new(0, 70, 0, 40)
-    RoleLabel.BackgroundTransparency = 1
-    RoleLabel.Text = userData.premium and "✨ Premium Member" or "👤 Free Member"
-    RoleLabel.Font = Enum.Font.Gotham
-    RoleLabel.TextSize = 12
-    RoleLabel.TextColor3 = userData.premium and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(180, 180, 180)
-    RoleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Stats Grid
-    local StatsFrame = Instance.new("Frame")
-    StatsFrame.Parent = ContentFrame
-    StatsFrame.Size = UDim2.new(1, -20, 0, 80)
-    StatsFrame.Position = UDim2.new(0, 10, 0, 90)
-    StatsFrame.BackgroundTransparency = 1
-    
-    local stats = {
-        {label = "Games", value = "0", icon = "🎮"},
-        {label = "Streak", value = "0", icon = "🔥"},
-        {label = "Words", value = "0", icon = "📝"},
-        {label = "Acc", value = "0%", icon = "🎯"}
-    }
-    
-    for i, stat in ipairs(stats) do
-        local card = Instance.new("Frame")
-        card.Parent = StatsFrame
-        card.Size = UDim2.new(0, 100, 1, 0)
-        card.Position = UDim2.new(0, (i-1) * 105, 0, 0)
-        card.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
-        card.BorderSizePixel = 0
-        
-        local cardCorner = Instance.new("UICorner")
-        cardCorner.CornerRadius = UDim.new(0, 6)
-        cardCorner.Parent = card
-        
-        local icon = Instance.new("TextLabel")
-        icon.Parent = card
-        icon.Size = UDim2.new(1, 0, 0, 25)
-        icon.Position = UDim2.new(0, 0, 0, 10)
-        icon.BackgroundTransparency = 1
-        icon.Text = stat.icon .. " " .. stat.value
-        icon.Font = Enum.Font.GothamBold
-        icon.TextSize = 16
-        icon.TextColor3 = Color3.fromRGB(255, 105, 180)
-        
-        local label = Instance.new("TextLabel")
-        label.Parent = card
-        label.Size = UDim2.new(1, 0, 0, 20)
-        label.Position = UDim2.new(0, 0, 0, 45)
-        label.BackgroundTransparency = 1
-        label.Text = stat.label
-        label.Font = Enum.Font.Gotham
-        label.TextSize = 11
-        label.TextColor3 = Color3.fromRGB(150, 150, 150)
-    end
+    local DiscordName = Instance.new("TextLabel")
+    DiscordName.Parent = ProfileFrame
+    DiscordName.Size = UDim2.new(0, 200, 0, 20)
+    DiscordName.Position = UDim2.new(0, 70, 0, 40)
+    DiscordName.BackgroundTransparency = 1
+    DiscordName.Text = "💬 " .. userData.discordUser
+    DiscordName.Font = Enum.Font.Gotham
+    DiscordName.TextSize = 12
+    DiscordName.TextColor3 = Color3.fromRGB(180, 180, 180)
+    DiscordName.TextXAlignment = Enum.TextXAlignment.Left
     
     -- Auto Farm Section
     local AutoFrame = Instance.new("Frame")
-    AutoFrame.Parent = ContentFrame
-    AutoFrame.Size = UDim2.new(1, -20, 0, 100)
-    AutoFrame.Position = UDim2.new(0, 10, 0, 180)
+    AutoFrame.Parent = MainContent
+    AutoFrame.Size = UDim2.new(1, -20, 0, 180)
+    AutoFrame.Position = UDim2.new(0, 10, 0, 90)
     AutoFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
     AutoFrame.BorderSizePixel = 0
     
@@ -642,7 +764,7 @@ function loadMainMenu()
     AutoTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
     AutoTitle.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Toggle
+    -- Auto Toggle
     local ToggleBg = Instance.new("Frame")
     ToggleBg.Parent = AutoFrame
     ToggleBg.Size = UDim2.new(0, 50, 0, 25)
@@ -677,69 +799,243 @@ function loadMainMenu()
         if toggleState then
             ToggleBg.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
             ToggleCircle:TweenPosition(UDim2.new(0, 27, 0.5, -10.5), "Out", "Quad", 0.2)
+            autoEnabled = true
+            startUltraAI()
         else
             ToggleBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
             ToggleCircle:TweenPosition(UDim2.new(0, 2, 0.5, -10.5), "Out", "Quad", 0.2)
+            autoEnabled = false
         end
     end)
     
-    -- Delay Slider
-    local DelayLabel = Instance.new("TextLabel")
-    DelayLabel.Parent = AutoFrame
-    DelayLabel.Size = UDim2.new(0, 100, 0, 20)
-    DelayLabel.Position = UDim2.new(0, 10, 0, 50)
-    DelayLabel.BackgroundTransparency = 1
-    DelayLabel.Text = "Delay: 350ms"
-    DelayLabel.Font = Enum.Font.Gotham
-    DelayLabel.TextSize = 12
-    DelayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+    -- Sliders
+    local function createSlider(parent, name, min, max, default, posY, callback)
+        local label = Instance.new("TextLabel")
+        label.Parent = parent
+        label.Size = UDim2.new(0, 100, 0, 20)
+        label.Position = UDim2.new(0, 10, 0, posY)
+        label.BackgroundTransparency = 1
+        label.Text = name .. ": " .. default
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 12
+        label.TextColor3 = Color3.fromRGB(180, 180, 180)
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local sliderBg = Instance.new("Frame")
+        sliderBg.Parent = parent
+        sliderBg.Size = UDim2.new(0, 200, 0, 8)
+        sliderBg.Position = UDim2.new(0, 120, 0, posY + 6)
+        sliderBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        sliderBg.BorderSizePixel = 0
+        
+        local sliderCorner = Instance.new("UICorner")
+        sliderCorner.CornerRadius = UDim.new(0, 4)
+        sliderCorner.Parent = sliderBg
+        
+        local sliderFill = Instance.new("Frame")
+        sliderFill.Parent = sliderBg
+        sliderFill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+        sliderFill.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+        sliderFill.BorderSizePixel = 0
+        
+        local fillCorner = Instance.new("UICorner")
+        fillCorner.CornerRadius = UDim.new(0, 4)
+        fillCorner.Parent = sliderFill
+        
+        local valueLabel = Instance.new("TextLabel")
+        valueLabel.Parent = parent
+        valueLabel.Size = UDim2.new(0, 40, 0, 20)
+        valueLabel.Position = UDim2.new(0, 330, 0, posY)
+        valueLabel.BackgroundTransparency = 1
+        valueLabel.Text = default
+        valueLabel.Font = Enum.Font.GothamBold
+        valueLabel.TextSize = 12
+        valueLabel.TextColor3 = Color3.fromRGB(255, 105, 180)
+        valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+        
+        local dragging = false
+        sliderBg.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+            end
+        end)
+        
+        sliderBg.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local mousePos = UserInputService:GetMouseLocation()
+                local sliderPos = sliderBg.AbsolutePosition
+                local sliderSize = sliderBg.AbsoluteSize
+                
+                local relativeX = math.clamp(mousePos.X - sliderPos.X, 0, sliderSize.X)
+                local percent = relativeX / sliderSize.X
+                local value = math.floor(min + (percent * (max - min)))
+                
+                sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                valueLabel.Text = tostring(value)
+                label.Text = name .. ": " .. value
+                callback(value)
+            end
+        end)
+        
+        return {label = label, fill = sliderFill, value = valueLabel}
+    end
     
-    -- Discord Info
-    local DiscordInfo = Instance.new("TextLabel")
-    DiscordInfo.Parent = AutoFrame
-    DiscordInfo.Size = UDim2.new(1, -20, 0, 20)
-    DiscordInfo.Position = UDim2.new(0, 10, 0, 75)
-    DiscordInfo.BackgroundTransparency = 1
-    DiscordInfo.Text = "💬 Discord: " .. userData.discordUser .. " | Role: " .. userData.role
-    DiscordInfo.Font = Enum.Font.Gotham
-    DiscordInfo.TextSize = 11
-    DiscordInfo.TextColor3 = Color3.fromRGB(150, 150, 150)
-    DiscordInfo.TextXAlignment = Enum.TextXAlignment.Left
+    -- Create sliders
+    createSlider(AutoFrame, "Aggression", 0, 100, config.aggression, 50, function(v)
+        config.aggression = v
+    end)
     
-    -- Version
-    local Version = Instance.new("TextLabel")
-    Version.Parent = ContentFrame
-    Version.Size = UDim2.new(1, -20, 0, 30)
-    Version.Position = UDim2.new(0, 10, 0, 290)
-    Version.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
-    Version.Text = "Lyora Sambung Kata v3.0 • Premium: " .. (userData.premium and "✅" or "❌")
-    Version.Font = Enum.Font.Gotham
-    Version.TextSize = 11
-    Version.TextColor3 = Color3.fromRGB(150, 150, 150)
+    createSlider(AutoFrame, "Min Delay", 10, 500, config.minDelay, 80, function(v)
+        config.minDelay = v
+    end)
     
-    local VersionCorner = Instance.new("UICorner")
-    VersionCorner.CornerRadius = UDim.new(0, 6)
-    VersionCorner.Parent = Version
+    createSlider(AutoFrame, "Max Delay", 100, 1500, config.maxDelay, 110, function(v)
+        config.maxDelay = v
+    end)
+    
+    createSlider(AutoFrame, "Min Length", 1, 3, config.minLength, 140, function(v)
+        config.minLength = v
+    end)
+    
+    -- Status Section
+    local StatusFrame = Instance.new("Frame")
+    StatusFrame.Parent = MainContent
+    StatusFrame.Size = UDim2.new(1, -20, 0, 120)
+    StatusFrame.Position = UDim2.new(0, 10, 0, 280)
+    StatusFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+    StatusFrame.BorderSizePixel = 0
+    
+    local StatusCorner = Instance.new("UICorner")
+    StatusCorner.CornerRadius = UDim.new(0, 8)
+    StatusCorner.Parent = StatusFrame
+    
+    local StatusTitle = Instance.new("TextLabel")
+    StatusTitle.Parent = StatusFrame
+    StatusTitle.Size = UDim2.new(1, -20, 0, 30)
+    StatusTitle.Position = UDim2.new(0, 10, 0, 10)
+    StatusTitle.BackgroundTransparency = 1
+    StatusTitle.Text = "📊 STATUS GAME"
+    StatusTitle.Font = Enum.Font.GothamBold
+    StatusTitle.TextSize = 16
+    StatusTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    StatusTitle.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local MatchStatus = Instance.new("TextLabel")
+    MatchStatus.Parent = StatusFrame
+    MatchStatus.Size = UDim2.new(0.5, -15, 0, 25)
+    MatchStatus.Position = UDim2.new(0, 10, 0, 45)
+    MatchStatus.BackgroundTransparency = 1
+    MatchStatus.Text = "🔴 Match: Waiting"
+    MatchStatus.Font = Enum.Font.Gotham
+    MatchStatus.TextSize = 13
+    MatchStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
+    MatchStatus.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local TurnStatus = Instance.new("TextLabel")
+    TurnStatus.Parent = StatusFrame
+    TurnStatus.Size = UDim2.new(0.5, -15, 0, 25)
+    TurnStatus.Position = UDim2.new(0.5, 5, 0, 45)
+    TurnStatus.BackgroundTransparency = 1
+    TurnStatus.Text = "⏳ Turn: -"
+    TurnStatus.Font = Enum.Font.Gotham
+    TurnStatus.TextSize = 13
+    TurnStatus.TextColor3 = Color3.fromRGB(255, 255, 0)
+    TurnStatus.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local CurrentWordLabel = Instance.new("TextLabel")
+    CurrentWordLabel.Parent = StatusFrame
+    CurrentWordLabel.Size = UDim2.new(0.5, -15, 0, 25)
+    CurrentWordLabel.Position = UDim2.new(0, 10, 0, 75)
+    CurrentWordLabel.BackgroundTransparency = 1
+    CurrentWordLabel.Text = "📝 Word: -"
+    CurrentWordLabel.Font = Enum.Font.Gotham
+    CurrentWordLabel.TextSize = 13
+    CurrentWordLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    CurrentWordLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local UsedCount = Instance.new("TextLabel")
+    UsedCount.Parent = StatusFrame
+    UsedCount.Size = UDim2.new(0.5, -15, 0, 25)
+    UsedCount.Position = UDim2.new(0.5, 5, 0, 75)
+    UsedCount.BackgroundTransparency = 1
+    UsedCount.Text = "📋 Used: 0"
+    UsedCount.Font = Enum.Font.Gotham
+    UsedCount.TextSize = 13
+    UsedCount.TextColor3 = Color3.fromRGB(180, 180, 180)
+    UsedCount.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Remote event handlers
+    MatchUI.OnClientEvent:Connect(function(cmd, value)
+        if cmd == "ShowMatchUI" then
+            matchActive = true
+            isMyTurn = false
+            resetUsedWords()
+            MatchStatus.Text = "🟢 Match: Active"
+            MatchStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
+        elseif cmd == "HideMatchUI" then
+            matchActive = false
+            isMyTurn = false
+            serverLetter = ""
+            resetUsedWords()
+            MatchStatus.Text = "🔴 Match: Waiting"
+            MatchStatus.TextColor3 = Color3.fromRGB(255, 100, 100)
+            TurnStatus.Text = "⏳ Turn: -"
+            CurrentWordLabel.Text = "📝 Word: -"
+        elseif cmd == "StartTurn" then
+            isMyTurn = true
+            TurnStatus.Text = "🎯 Turn: Your Turn"
+            TurnStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
+            if autoEnabled then
+                startUltraAI()
+            end
+        elseif cmd == "EndTurn" then
+            isMyTurn = false
+            TurnStatus.Text = "⏳ Turn: Opponent"
+            TurnStatus.TextColor3 = Color3.fromRGB(255, 255, 0)
+        elseif cmd == "UpdateServerLetter" then
+            serverLetter = value or ""
+            CurrentWordLabel.Text = "📝 Word: " .. serverLetter
+        end
+    end)
+    
+    BillboardUpdate.OnClientEvent:Connect(function(word)
+        if matchActive and not isMyTurn then
+            opponentStreamWord = word or ""
+        end
+    end)
+    
+    UsedWordWarn.OnClientEvent:Connect(function(word)
+        if word then
+            addUsedWord(word)
+            UsedCount.Text = "📋 Used: " .. #usedWordsList
+            if autoEnabled and matchActive and isMyTurn then
+                humanDelay()
+                startUltraAI()
+            end
+        end
+    end)
 end
 
--- =========================================================
--- KEYBIND TOGGLE (RightShift)
--- =========================================================
-
+-- =========================
+-- KEYBIND TOGGLE
+-- =========================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    
     if input.KeyCode == Enum.KeyCode.RightShift then
         MainFrame.Visible = not MainFrame.Visible
     end
 end)
 
--- =========================================================
+-- =========================
 -- INIT
--- =========================================================
-
-print("✅ LYORA GUI + KEY SYSTEM LOADED")
+-- =========================
+print("✅ LYORA CUSTOM GUI + PASTEFY KEY SYSTEM LOADED")
+print("📌 PASTE ID: " .. PASTE_ID)
 print("👤 User: " .. LocalPlayer.Name)
 print("🔑 User ID: " .. LocalPlayer.UserId)
-print("📱 Platform: " .. (UserInputService.TouchEnabled and "Android" or "PC"))
