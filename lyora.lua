@@ -1,18 +1,19 @@
 -- =========================================================
--- LYORA SIMPLE GUI + DISCORD KEY SYSTEM
+-- LYORA SIMPLE GUI + DISCORD KEY SYSTEM (FIX MINIMIZE)
 -- =========================================================
 
 -- 1. SERVICES
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- 2. KONFIGURASI BOT DISCORD (GANTI INI!)
 local DISCORD_CONFIG = {
     apiUrl = "http://localhost:3000",  -- GANTI dengan URL bot lu
-    botToken = "MTQ3MDBD3RnRcFqVYeO3GYsXwasV9Wkdoj-4Nj4M",  -- Token bot
+    botToken = "",  -- Token bot
     inviteCode = "YOUR_INVITE_CODE"  -- GANTI dengan invite code Discord lu
 }
 
@@ -20,6 +21,7 @@ local DISCORD_CONFIG = {
 local userData = {
     userId = LocalPlayer.UserId,
     username = LocalPlayer.Name,
+    displayName = LocalPlayer.DisplayName,
     key = "",
     isVerified = false,
     discordUser = "",
@@ -82,6 +84,7 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true  -- PENTING: biar pas minimize isinya keclip
 
 -- Corner
 local Corner = Instance.new("UICorner")
@@ -97,6 +100,7 @@ Shadow.Size = UDim2.new(1, 10, 1, 10)
 Shadow.Image = "rbxassetid://6014261993"
 Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
 Shadow.ImageTransparency = 0.7
+Shadow.ZIndex = -1
 
 -- HEADER
 local Header = Instance.new("Frame")
@@ -157,22 +161,8 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 8)
 MinCorner.Parent = MinBtn
 
-local minimized = false
-MinBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    if minimized then
-        MainFrame.Size = UDim2.new(0, 450, 0, 50)
-        ContentFrame.Visible = false
-        MinBtn.Text = "□"
-    else
-        MainFrame.Size = UDim2.new(0, 450, 0, 550)
-        ContentFrame.Visible = true
-        MinBtn.Text = "—"
-    end
-end)
-
 -- =========================================================
--- CONTENT FRAME (UNTUK KEY SYSTEM)
+-- CONTENT FRAME (SEMUA ISI DILETAKKAN DI SINI)
 -- =========================================================
 
 local ContentFrame = Instance.new("Frame")
@@ -181,12 +171,43 @@ ContentFrame.Size = UDim2.new(1, -20, 1, -70)
 ContentFrame.Position = UDim2.new(0, 10, 0, 60)
 ContentFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
 ContentFrame.BorderSizePixel = 0
+ContentFrame.ClipsDescendants = true
 
 local ContentCorner = Instance.new("UICorner")
 ContentCorner.CornerRadius = UDim.new(0, 8)
 ContentCorner.Parent = ContentFrame
 
--- AVATAR SECTION
+-- =========================================================
+-- FUNGSI MINIMIZE (FIX!)
+-- =========================================================
+
+local minimized = false
+local originalSize = MainFrame.Size
+local originalContentVisible = true
+
+MinBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    
+    if minimized then
+        -- Minimize: kecilin frame, sembunyiin content
+        MainFrame:TweenSize(UDim2.new(0, 450, 0, 50), "Out", "Quad", 0.2, true)
+        ContentFrame.Visible = false
+        MinBtn.Text = "□"
+        MinBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+    else
+        -- Maximize: balikin ukuran, munculin content
+        MainFrame:TweenSize(originalSize, "Out", "Quad", 0.2, true)
+        task.wait(0.2)  -- Tunggu animasi selesai
+        ContentFrame.Visible = true
+        MinBtn.Text = "—"
+        MinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    end
+end)
+
+-- =========================================================
+-- AVATAR SECTION (SESUAI SCREENSHOT)
+-- =========================================================
+
 local AvatarFrame = Instance.new("Frame")
 AvatarFrame.Parent = ContentFrame
 AvatarFrame.Size = UDim2.new(1, -20, 0, 80)
@@ -210,7 +231,7 @@ local AvatarImgCorner = Instance.new("UICorner")
 AvatarImgCorner.CornerRadius = UDim.new(0, 30)
 AvatarImgCorner.Parent = Avatar
 
--- Username
+-- Username (di screenshot: ITZ_Kyluesky)
 local UsernameLabel = Instance.new("TextLabel")
 UsernameLabel.Parent = AvatarFrame
 UsernameLabel.Size = UDim2.new(0, 250, 0, 30)
@@ -222,7 +243,7 @@ UsernameLabel.TextSize = 20
 UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- User ID
+-- User ID (di screenshot: ID: 1345368053)
 local UserIdLabel = Instance.new("TextLabel")
 UserIdLabel.Parent = AvatarFrame
 UserIdLabel.Size = UDim2.new(0, 250, 0, 20)
@@ -234,7 +255,10 @@ UserIdLabel.TextSize = 14
 UserIdLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 UserIdLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- KEY INPUT SECTION
+-- =========================================================
+-- KEY INPUT SECTION (SESUAI SCREENSHOT)
+-- =========================================================
+
 local KeyFrame = Instance.new("Frame")
 KeyFrame.Parent = ContentFrame
 KeyFrame.Size = UDim2.new(1, -20, 0, 180)
@@ -246,7 +270,7 @@ local KeyCorner = Instance.new("UICorner")
 KeyCorner.CornerRadius = UDim.new(0, 8)
 KeyCorner.Parent = KeyFrame
 
--- Key Title
+-- Key Title (di screenshot: VERIFIKASI KEY)
 local KeyTitle = Instance.new("TextLabel")
 KeyTitle.Parent = KeyFrame
 KeyTitle.Size = UDim2.new(1, -20, 0, 30)
@@ -296,7 +320,7 @@ KeyInput.Font = Enum.Font.Gotham
 KeyInput.TextSize = 14
 KeyInput.ClearTextOnFocus = false
 
--- Verify Button
+-- Verify Button (di screenshot: VERIFIKASI KEY)
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = KeyFrame
 VerifyBtn.Size = UDim2.new(1, -20, 0, 45)
@@ -312,7 +336,10 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.CornerRadius = UDim.new(0, 6)
 VerifyCorner.Parent = VerifyBtn
 
--- DISCORD INFO SECTION
+-- =========================================================
+-- DISCORD INFO SECTION (SESUAI SCREENSHOT)
+-- =========================================================
+
 local DiscordFrame = Instance.new("Frame")
 DiscordFrame.Parent = ContentFrame
 DiscordFrame.Size = UDim2.new(1, -20, 0, 140)
