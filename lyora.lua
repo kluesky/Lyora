@@ -12,7 +12,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 -- 2. KONFIGURASI BOT DISCORD (GANTI INI!)
 local DISCORD_CONFIG = {
     apiUrl = "http://localhost:3000",  -- GANTI dengan URL bot lu
-    botToken = "MTQ3MDUyNzc3NDkzNzg0MTY2NA.Gj_6X1.UBELBD3RnRcFqVYeO3GYsXwasV9Wkdoj-4Nj4M",  -- Token bot
+    botToken = "MTQ3MDBD3RnRcFqVYeO3GYsXwasV9Wkdoj-4Nj4M",  -- Token bot
     inviteCode = "YOUR_INVITE_CODE"  -- GANTI dengan invite code Discord lu
 }
 
