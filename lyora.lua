@@ -1,1084 +1,703 @@
 -- =========================================================
--- LYORA CUSTOM GUI - ZUMHUB KEY SYSTEM + DESAIN SENDIRI
+-- LYORA SIMPLE GUI + DISCORD KEY SYSTEM
 -- =========================================================
 
--- 1. LOAD ZUMHUB KEY SYSTEM
-loadstring(game:HttpGet("https://raw.githubusercontent.com/UwURaww/-ZumHub-Script-/refs/heads/main/Key%20system%20main.lua.txt"))()
-
--- 2. KONFIGURASI ZUMHUB (GANTI DENGAN PUNYA LU!)
-Config = {
-    api = "https://your-bot-api.com",  -- URL bot Discord lu
-    service = "lyora",
-    provider = "discord",
-    discordInvite = "YOUR_INVITE_CODE",
-    title = "LYORA SAMBUNG KATA",
-    subtitle = "Ultimate Auto Farm",
-    mainColor = Color3.fromRGB(255, 105, 180),  -- Pink
-    backgroundColor = Color3.fromRGB(20, 20, 30),
-    textColor = Color3.fromRGB(255, 255, 255),
-    accentColor = Color3.fromRGB(100, 200, 255)  -- Biru buat aksen
-}
-
--- 3. VARIABEL GLOBAL
+-- 1. SERVICES
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
-local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Data user
+-- 2. KONFIGURASI BOT DISCORD (GANTI INI!)
+local DISCORD_CONFIG = {
+    apiUrl = "http://localhost:3000",  -- GANTI dengan URL bot lu
+    botToken = "MTQ3MDUyNzc3NDkzNzg0MTY2NA.Gj_6X1.UBELBD3RnRcFqVYeO3GYsXwasV9Wkdoj-4Nj4M",  -- Token bot
+    inviteCode = "YOUR_INVITE_CODE"  -- GANTI dengan invite code Discord lu
+}
+
+-- 3. DATA USER
 local userData = {
     userId = LocalPlayer.UserId,
     username = LocalPlayer.Name,
-    displayName = LocalPlayer.DisplayName,
-    accountAge = LocalPlayer.AccountAge,
-    isVerified = false,
     key = "",
+    isVerified = false,
     discordUser = "",
-    discordId = "",
     role = "user",
-    premium = false,
-    premiumUntil = 0
+    premium = false
 }
 
 -- =========================================================
--- MEMBUAT GUI DARI NOL (CUSTOM)
+-- FUNGSI API KE BOT DISCORD
 -- =========================================================
 
--- Cek parent yang available (buat Android)
+local function callDiscordAPI(endpoint, data)
+    local success, response = pcall(function()
+        local headers = {
+            ["Content-Type"] = "application/json",
+            ["Authorization"] = "Bot " .. DISCORD_CONFIG.botToken
+        }
+        
+        local body = HttpService:JSONEncode(data)
+        
+        return HttpService:PostAsync(
+            DISCORD_CONFIG.apiUrl .. endpoint,
+            body,
+            Enum.HttpContentType.ApplicationJson,
+            false,
+            headers
+        )
+    end)
+    
+    if success then
+        return true, HttpService:JSONDecode(response)
+    end
+    return false, {message = "Gagal konek ke server"}
+end
+
+local function verifyKey(key)
+    return callDiscordAPI("/verify-key", {
+        userId = tostring(userData.userId),
+        username = userData.username,
+        key = key
+    })
+end
+
+-- =========================================================
+-- MEMBUAT GUI (PASTI MUNCUL!)
+-- =========================================================
+
 local ScreenGui = Instance.new("ScreenGui")
-local parent = CoreGui or PlayerGui
-ScreenGui.Parent = parent
+ScreenGui.Parent = PlayerGui
 ScreenGui.Name = "LyoraGUI"
+ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Enabled = true
 
--- Variables untuk GUI
-local gui = {
-    open = true,
-    dragging = false,
-    dragStart = nil,
-    startPos = nil,
-    currentTab = "Profile",
-    tabs = {},
-    elements = {}
-}
+-- MAIN FRAME
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.Size = UDim2.new(0, 450, 0, 550)
+MainFrame.Position = UDim2.new(0.5, -225, 0.5, -275)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
 
--- =========================================================
--- FUNGSI UTILITY
--- =========================================================
-
--- Fungsi bikin rounded frame
-local function CreateRoundedFrame(name, parent, size, pos, color, radius)
-    local frame = Instance.new("Frame")
-    frame.Name = name
-    frame.Parent = parent
-    frame.Size = size
-    frame.Position = pos
-    frame.BackgroundColor3 = color
-    frame.BorderSizePixel = 0
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius)
-    corner.Parent = frame
-    
-    return frame
-end
-
--- Fungsi bikin shadow
-local function AddShadow(frame, transparency, size)
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.Parent = frame
-    shadow.BackgroundTransparency = 1
-    shadow.Position = UDim2.new(0, -5, 0, -5)
-    shadow.Size = UDim2.new(1, 10, 1, 10)
-    shadow.Image = "rbxassetid://6014261993"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = transparency or 0.7
-    shadow.ZIndex = frame.ZIndex - 1
-    return shadow
-end
-
--- Fungsi bikin gradient
-local function AddGradient(frame, color1, color2, rotation)
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, color1), ColorSequenceKeypoint.new(1, color2)})
-    gradient.Rotation = rotation or 90
-    gradient.Parent = frame
-    return gradient
-end
-
--- =========================================================
--- MAIN WINDOW (DRAGABLE)
--- =========================================================
-
--- Background blur (optional)
-local blur = Instance.new("ImageLabel")
-blur.Parent = ScreenGui
-blur.Size = UDim2.new(1, 0, 1, 0)
-blur.BackgroundTransparency = 1
-blur.Image = "rbxassetid://3570695787"
-blur.ImageColor3 = Color3.fromRGB(0, 0, 0)
-blur.ImageTransparency = 0.4
-blur.ZIndex = 0
-blur.Visible = true
-
--- Main window frame
-local MainFrame = CreateRoundedFrame("MainFrame", ScreenGui, 
-    UDim2.new(0, 750, 0, 500), 
-    UDim2.new(0.5, -375, 0.5, -250), 
-    Config.backgroundColor, 10)
+-- Corner
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 10)
+Corner.Parent = MainFrame
 
 -- Shadow
-AddShadow(MainFrame, 0.5, 10)
+local Shadow = Instance.new("ImageLabel")
+Shadow.Parent = MainFrame
+Shadow.BackgroundTransparency = 1
+Shadow.Position = UDim2.new(0, -5, 0, -5)
+Shadow.Size = UDim2.new(1, 10, 1, 10)
+Shadow.Image = "rbxassetid://6014261993"
+Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.ImageTransparency = 0.7
 
--- Header
-local Header = CreateRoundedFrame("Header", MainFrame, 
-    UDim2.new(1, 0, 0, 50), 
-    UDim2.new(0, 0, 0, 0), 
-    Config.mainColor, 0)
+-- HEADER
+local Header = Instance.new("Frame")
+Header.Parent = MainFrame
+Header.Size = UDim2.new(1, 0, 0, 50)
+Header.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+Header.BorderSizePixel = 0
 
--- Header gradient
-AddGradient(Header, Config.mainColor, Color3.fromRGB(Config.mainColor.R * 0.7, Config.mainColor.G * 0.7, Config.mainColor.B * 0.7), 90)
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 10)
+HeaderCorner.Parent = Header
 
 -- Title
 local Title = Instance.new("TextLabel")
 Title.Parent = Header
-Title.Size = UDim2.new(0, 200, 1, 0)
+Title.Size = UDim2.new(0, 250, 1, 0)
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = Config.title
+Title.Text = "🔐 LYORA KEY SYSTEM"
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
-Title.TextColor3 = Config.textColor
+Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Subtitle
-local Subtitle = Instance.new("TextLabel")
-Subtitle.Parent = Header
-Subtitle.Size = UDim2.new(0, 200, 0, 20)
-Subtitle.Position = UDim2.new(0, 15, 0, 28)
-Subtitle.BackgroundTransparency = 1
-Subtitle.Text = Config.subtitle
-Subtitle.Font = Enum.Font.Gotham
-Subtitle.TextSize = 12
-Subtitle.TextColor3 = Color3.fromRGB(220, 220, 220)
-Subtitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Close button
-local CloseBtn = Instance.new("ImageButton")
+-- Close Button
+local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = Header
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -40, 0.5, -15)
-CloseBtn.BackgroundTransparency = 1
-CloseBtn.Image = "rbxassetid://6023426926"  -- Close icon
-CloseBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
-
--- Minimize button
-local MinBtn = Instance.new("ImageButton")
-MinBtn.Parent = Header
-MinBtn.Size = UDim2.new(0, 30, 0, 30)
-MinBtn.Position = UDim2.new(1, -75, 0.5, -15)
-MinBtn.BackgroundTransparency = 1
-MinBtn.Image = "rbxassetid://6023426931"  -- Minimize icon
-MinBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
-
--- Make header draggable
-local function onDragStart(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        gui.dragging = true
-        gui.dragStart = input.Position
-        gui.startPos = MainFrame.Position
-    end
-end
-
-local function onDrag(input)
-    if gui.dragging and input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        local delta = input.Position - gui.dragStart
-        MainFrame.Position = UDim2.new(
-            gui.startPos.X.Scale, gui.startPos.X.Offset + delta.X,
-            gui.startPos.Y.Scale, gui.startPos.Y.Offset + delta.Y
-        )
-    end
-end
-
-local function onDragEnd()
-    gui.dragging = false
-end
-
-Header.InputBegan:Connect(onDragStart)
-Header.InputChanged:Connect(onDrag)
-Header.InputEnded:Connect(onDragEnd)
-
--- =========================================================
--- TAB BUTTONS (SIDE MENU)
--- =========================================================
-
-local TabContainer = CreateRoundedFrame("TabContainer", MainFrame, 
-    UDim2.new(0, 150, 0, 400), 
-    UDim2.new(0, 10, 0, 70), 
-    Color3.fromRGB(25, 30, 40), 8)
-
--- Tab buttons
-local tabs = {
-    {name = "Profile", icon = "👤", color = Config.mainColor},
-    {name = "Hub", icon = "🌐", color = Config.accentColor},
-    {name = "Misc", icon = "⚙️", color = Color3.fromRGB(255, 200, 100)},
-    {name = "Info", icon = "ℹ️", color = Color3.fromRGB(150, 150, 255)},
-    {name = "Discord", icon = "💬", color = Color3.fromRGB(100, 200, 255)},
-    {name = "Settings", icon = "🔧", color = Color3.fromRGB(200, 150, 255)}
-}
-
-local tabButtons = {}
-local contentFrames = {}
-
-for i, tab in ipairs(tabs) do
-    local btnFrame = CreateRoundedFrame(tab.name .. "Btn", TabContainer, 
-        UDim2.new(1, -10, 0, 45), 
-        UDim2.new(0, 5, 0, 5 + (i-1) * 50), 
-        gui.currentTab == tab.name and tab.color or Color3.fromRGB(35, 40, 50), 6)
-    
-    local btnIcon = Instance.new("TextLabel")
-    btnIcon.Parent = btnFrame
-    btnIcon.Size = UDim2.new(0, 30, 1, 0)
-    btnIcon.Position = UDim2.new(0, 5, 0, 0)
-    btnIcon.BackgroundTransparency = 1
-    btnIcon.Text = tab.icon
-    btnIcon.Font = Enum.Font.Gotham
-    btnIcon.TextSize = 20
-    btnIcon.TextColor3 = Config.textColor
-    
-    local btnText = Instance.new("TextLabel")
-    btnText.Parent = btnFrame
-    btnText.Size = UDim2.new(1, -40, 1, 0)
-    btnText.Position = UDim2.new(0, 40, 0, 0)
-    btnText.BackgroundTransparency = 1
-    btnText.Text = tab.name
-    btnText.Font = Enum.Font.GothamBold
-    btnText.TextSize = 16
-    btnText.TextColor3 = Config.textColor
-    btnText.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Button click
-    local btn = Instance.new("TextButton")
-    btn.Parent = btnFrame
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.ZIndex = 10
-    
-    btn.MouseButton1Click:Connect(function()
-        -- Update tab colors
-        for j, oldBtn in ipairs(tabButtons) do
-            oldBtn.BackgroundColor3 = Color3.fromRGB(35, 40, 50)
-        end
-        btnFrame.BackgroundColor3 = tab.color
-        
-        -- Hide all content
-        for _, frame in pairs(contentFrames) do
-            frame.Visible = false
-        end
-        
-        -- Show selected content
-        if contentFrames[tab.name] then
-            contentFrames[tab.name].Visible = true
-        end
-        
-        gui.currentTab = tab.name
-    end)
-    
-    table.insert(tabButtons, btnFrame)
-end
-
--- =========================================================
--- CONTENT AREA
--- =========================================================
-
-local ContentArea = CreateRoundedFrame("ContentArea", MainFrame, 
-    UDim2.new(1, -180, 1, -90), 
-    UDim2.new(0, 170, 0, 60), 
-    Color3.fromRGB(25, 30, 40), 8)
-
--- =========================================================
--- PROFILE TAB CONTENT
--- =========================================================
-
-local ProfileContent = Instance.new("Frame")
-ProfileContent.Parent = ContentArea
-ProfileContent.Name = "ProfileContent"
-ProfileContent.Size = UDim2.new(1, -20, 1, -20)
-ProfileContent.Position = UDim2.new(0, 10, 0, 10)
-ProfileContent.BackgroundTransparency = 1
-ProfileContent.Visible = true  -- Default visible
-contentFrames["Profile"] = ProfileContent
-
--- Profile header
-local ProfileHeader = Instance.new("TextLabel")
-ProfileHeader.Parent = ProfileContent
-ProfileHeader.Size = UDim2.new(1, 0, 0, 30)
-ProfileHeader.BackgroundTransparency = 1
-ProfileHeader.Text = "👤 Profile Information"
-ProfileHeader.Font = Enum.Font.GothamBold
-ProfileHeader.TextSize = 20
-ProfileHeader.TextColor3 = Config.textColor
-ProfileHeader.TextXAlignment = Enum.TextXAlignment.Left
-
--- Profile card
-local ProfileCard = CreateRoundedFrame("ProfileCard", ProfileContent, 
-    UDim2.new(1, 0, 0, 120), 
-    UDim2.new(0, 0, 0, 40), 
-    Color3.fromRGB(30, 35, 45), 8)
-
--- Avatar
-local Avatar = Instance.new("ImageLabel")
-Avatar.Parent = ProfileCard
-Avatar.Size = UDim2.new(0, 70, 0, 70)
-Avatar.Position = UDim2.new(0, 15, 0.5, -35)
-Avatar.BackgroundColor = Color3.fromRGB(45, 50, 60)
-Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420"
-Avatar.BorderRadius = UDim.new(0, 35)
-
-local AvatarCorner = Instance.new("UICorner")
-AvatarCorner.CornerRadius = UDim.new(0, 35)
-AvatarCorner.Parent = Avatar
-
--- Username
-local UserNameLabel = Instance.new("TextLabel")
-UserNameLabel.Parent = ProfileCard
-UserNameLabel.Size = UDim2.new(0, 300, 0, 30)
-UserNameLabel.Position = UDim2.new(0, 100, 0, 20)
-UserNameLabel.BackgroundTransparency = 1
-UserNameLabel.Text = LocalPlayer.Name
-UserNameLabel.Font = Enum.Font.GothamBold
-UserNameLabel.TextSize = 22
-UserNameLabel.TextColor3 = Config.textColor
-UserNameLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- User ID
-local UserIDLabel = Instance.new("TextLabel")
-UserIDLabel.Parent = ProfileCard
-UserIDLabel.Size = UDim2.new(0, 300, 0, 20)
-UserIDLabel.Position = UDim2.new(0, 100, 0, 50)
-UserIDLabel.BackgroundTransparency = 1
-UserIDLabel.Text = "ID: " .. LocalPlayer.UserId
-UserIDLabel.Font = Enum.Font.Gotham
-UserIDLabel.TextSize = 14
-UserIDLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-UserIDLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Status
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Parent = ProfileCard
-StatusLabel.Size = UDim2.new(0, 300, 0, 20)
-StatusLabel.Position = UDim2.new(0, 100, 0, 75)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Account Age: " .. math.floor(LocalPlayer.AccountAge) .. " days"
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 14
-StatusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Stats grid
-local StatsGrid = Instance.new("Frame")
-StatsGrid.Parent = ProfileContent
-StatsGrid.Size = UDim2.new(1, 0, 0, 100)
-StatsGrid.Position = UDim2.new(0, 0, 0, 180)
-StatsGrid.BackgroundTransparency = 1
-
-local stats = {
-    {label = "Total Games", value = "0", icon = "🎮"},
-    {label = "Win Streak", value = "0", icon = "🔥"},
-    {label = "Words", value = "0", icon = "📝"},
-    {label = "Accuracy", value = "0%", icon = "🎯"}
-}
-
-for i, stat in ipairs(stats) do
-    local card = CreateRoundedFrame("Stat" .. i, StatsGrid, 
-        UDim2.new(0, 130, 0, 80), 
-        UDim2.new(0, (i-1) * 140, 0, 10), 
-        Color3.fromRGB(30, 35, 45), 6)
-    
-    local icon = Instance.new("TextLabel")
-    icon.Parent = card
-    icon.Size = UDim2.new(1, 0, 0, 30)
-    icon.Position = UDim2.new(0, 0, 0, 10)
-    icon.BackgroundTransparency = 1
-    icon.Text = stat.icon .. " " .. stat.value
-    icon.Font = Enum.Font.GothamBold
-    icon.TextSize = 18
-    icon.TextColor3 = Config.mainColor
-    
-    local label = Instance.new("TextLabel")
-    label.Parent = card
-    label.Size = UDim2.new(1, 0, 0, 20)
-    label.Position = UDim2.new(0, 0, 0, 50)
-    label.BackgroundTransparency = 1
-    label.Text = stat.label
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 12
-    label.TextColor3 = Color3.fromRGB(150, 150, 150)
-end
-
--- =========================================================
--- HUB TAB CONTENT (MAIN FEATURES)
--- =========================================================
-
-local HubContent = Instance.new("Frame")
-HubContent.Parent = ContentArea
-HubContent.Name = "HubContent"
-HubContent.Size = UDim2.new(1, -20, 1, -20)
-HubContent.Position = UDim2.new(0, 10, 0, 10)
-HubContent.BackgroundTransparency = 1
-HubContent.Visible = false
-contentFrames["Hub"] = HubContent
-
--- Hub header
-local HubHeader = Instance.new("TextLabel")
-HubHeader.Parent = HubContent
-HubHeader.Size = UDim2.new(1, 0, 0, 30)
-HubHeader.BackgroundTransparency = 1
-HubHeader.Text = "🌐 Main Features"
-HubHeader.Font = Enum.Font.GothamBold
-HubHeader.TextSize = 20
-HubHeader.TextColor3 = Config.textColor
-HubHeader.TextXAlignment = Enum.TextXAlignment.Left
-
--- Auto farm section
-local AutoFarmCard = CreateRoundedFrame("AutoFarmCard", HubContent, 
-    UDim2.new(1, 0, 0, 150), 
-    UDim2.new(0, 0, 0, 40), 
-    Color3.fromRGB(30, 35, 45), 8)
-
--- Title with toggle
-local AutoTitle = Instance.new("TextLabel")
-AutoTitle.Parent = AutoFarmCard
-AutoTitle.Size = UDim2.new(0, 200, 0, 30)
-AutoTitle.Position = UDim2.new(0, 15, 0, 10)
-AutoTitle.BackgroundTransparency = 1
-AutoTitle.Text = "⚡ Auto Farm"
-AutoTitle.Font = Enum.Font.GothamBold
-AutoTitle.TextSize = 18
-AutoTitle.TextColor3 = Config.textColor
-AutoTitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Toggle button (custom)
-local ToggleBg = CreateRoundedFrame("ToggleBg", AutoFarmCard, 
-    UDim2.new(0, 60, 0, 30), 
-    UDim2.new(1, -75, 0, 10), 
-    Color3.fromRGB(60, 60, 60), 15)
-
-local ToggleCircle = CreateRoundedFrame("ToggleCircle", ToggleBg, 
-    UDim2.new(0, 26, 0, 26), 
-    UDim2.new(0, 2, 0.5, -13), 
-    Color3.fromRGB(255, 255, 255), 13)
-
-local ToggleState = false
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Parent = ToggleBg
-ToggleButton.Size = UDim2.new(1, 0, 1, 0)
-ToggleButton.BackgroundTransparency = 1
-ToggleButton.Text = ""
-
-ToggleButton.MouseButton1Click:Connect(function()
-    ToggleState = not ToggleState
-    if ToggleState then
-        ToggleBg.BackgroundColor3 = Config.mainColor
-        ToggleCircle:TweenPosition(UDim2.new(0, 32, 0.5, -13), "Out", "Quad", 0.2)
-    else
-        ToggleBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        ToggleCircle:TweenPosition(UDim2.new(0, 2, 0.5, -13), "Out", "Quad", 0.2)
-    end
-end)
-
--- Settings
-local DelayLabel = Instance.new("TextLabel")
-DelayLabel.Parent = AutoFarmCard
-DelayLabel.Size = UDim2.new(0, 100, 0, 20)
-DelayLabel.Position = UDim2.new(0, 15, 0, 50)
-DelayLabel.BackgroundTransparency = 1
-DelayLabel.Text = "Delay (ms):"
-DelayLabel.Font = Enum.Font.Gotham
-DelayLabel.TextSize = 14
-DelayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Slider (custom sederhana)
-local SliderBg = CreateRoundedFrame("SliderBg", AutoFarmCard, 
-    UDim2.new(0, 200, 0, 10), 
-    UDim2.new(0, 15, 0, 75), 
-    Color3.fromRGB(60, 60, 60), 5)
-
-local SliderFill = CreateRoundedFrame("SliderFill", SliderBg, 
-    UDim2.new(0.5, 0, 1, 0), 
-    UDim2.new(0, 0, 0, 0), 
-    Config.mainColor, 5)
-
-local SliderValue = Instance.new("TextLabel")
-SliderValue.Parent = AutoFarmCard
-SliderValue.Size = UDim2.new(0, 50, 0, 20)
-SliderValue.Position = UDim2.new(0, 220, 0, 70)
-SliderValue.BackgroundTransparency = 1
-SliderValue.Text = "350"
-SliderValue.Font = Enum.Font.GothamBold
-SliderValue.TextSize = 14
-SliderValue.TextColor3 = Config.mainColor
-SliderValue.TextXAlignment = Enum.TextXAlignment.Left
-
--- Slider drag functionality
-local dragging = false
-SliderBg.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-    end
-end)
-
-SliderBg.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local mousePos = UserInputService:GetMouseLocation()
-        local sliderPos = SliderBg.AbsolutePosition
-        local sliderSize = SliderBg.AbsoluteSize
-        
-        local relativeX = math.clamp(mousePos.X - sliderPos.X, 0, sliderSize.X)
-        local percent = relativeX / sliderSize.X
-        
-        SliderFill.Size = UDim2.new(percent, 0, 1, 0)
-        SliderValue.Text = tostring(math.floor(percent * 500 + 100))
-    end
-end)
-
--- =========================================================
--- MISC TAB CONTENT
--- =========================================================
-
-local MiscContent = Instance.new("Frame")
-MiscContent.Parent = ContentArea
-MiscContent.Name = "MiscContent"
-MiscContent.Size = UDim2.new(1, -20, 1, -20)
-MiscContent.Position = UDim2.new(0, 10, 0, 10)
-MiscContent.BackgroundTransparency = 1
-MiscContent.Visible = false
-contentFrames["Misc"] = MiscContent
-
--- Misc header
-local MiscHeader = Instance.new("TextLabel")
-MiscHeader.Parent = MiscContent
-MiscHeader.Size = UDim2.new(1, 0, 0, 30)
-MiscHeader.BackgroundTransparency = 1
-MiscHeader.Text = "⚙️ Miscellaneous"
-MiscHeader.Font = Enum.Font.GothamBold
-MiscHeader.TextSize = 20
-MiscHeader.TextColor3 = Config.textColor
-MiscHeader.TextXAlignment = Enum.TextXAlignment.Left
-
--- Settings list
-local settings = {
-    {name = "Anti AFK", desc = "Prevent being kicked for inactivity"},
-    {name = "Auto Reconnect", desc = "Auto rejoin game if disconnected"},
-    {name = "Hide UI in Game", desc = "Auto hide GUI during matches"},
-    {name = "Sound Effects", desc = "Play sounds on actions"}
-}
-
-for i, setting in ipairs(settings) do
-    local card = CreateRoundedFrame("Setting" .. i, MiscContent, 
-        UDim2.new(1, 0, 0, 60), 
-        UDim2.new(0, 0, 0, 40 + (i-1) * 70), 
-        Color3.fromRGB(30, 35, 45), 6)
-    
-    local name = Instance.new("TextLabel")
-    name.Parent = card
-    name.Size = UDim2.new(0, 200, 0, 25)
-    name.Position = UDim2.new(0, 15, 0, 8)
-    name.BackgroundTransparency = 1
-    name.Text = setting.name
-    name.Font = Enum.Font.GothamBold
-    name.TextSize = 16
-    name.TextColor3 = Config.textColor
-    name.TextXAlignment = Enum.TextXAlignment.Left
-    
-    local desc = Instance.new("TextLabel")
-    desc.Parent = card
-    desc.Size = UDim2.new(0, 300, 0, 20)
-    desc.Position = UDim2.new(0, 15, 0, 33)
-    desc.BackgroundTransparency = 1
-    desc.Text = setting.desc
-    desc.Font = Enum.Font.Gotham
-    desc.TextSize = 12
-    desc.TextColor3 = Color3.fromRGB(150, 150, 150)
-    desc.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Toggle kecil
-    local togBg = CreateRoundedFrame("TogBg" .. i, card, 
-        UDim2.new(0, 40, 0, 20), 
-        UDim2.new(1, -55, 0.5, -10), 
-        Color3.fromRGB(60, 60, 60), 10)
-    
-    local togCirc = CreateRoundedFrame("TogCirc" .. i, togBg, 
-        UDim2.new(0, 16, 0, 16), 
-        UDim2.new(0, 2, 0.5, -8), 
-        Color3.fromRGB(255, 255, 255), 8)
-end
-
--- =========================================================
--- INFO TAB CONTENT
--- =========================================================
-
-local InfoContent = Instance.new("Frame")
-InfoContent.Parent = ContentArea
-InfoContent.Name = "InfoContent"
-InfoContent.Size = UDim2.new(1, -20, 1, -20)
-InfoContent.Position = UDim2.new(0, 10, 0, 10)
-InfoContent.BackgroundTransparency = 1
-InfoContent.Visible = false
-contentFrames["Info"] = InfoContent
-
--- Info header
-local InfoHeader = Instance.new("TextLabel")
-InfoHeader.Parent = InfoContent
-InfoHeader.Size = UDim2.new(1, 0, 0, 30)
-InfoHeader.BackgroundTransparency = 1
-InfoHeader.Text = "ℹ️ Information"
-InfoHeader.Font = Enum.Font.GothamBold
-InfoHeader.TextSize = 20
-InfoHeader.TextColor3 = Config.textColor
-InfoHeader.TextXAlignment = Enum.TextXAlignment.Left
-
--- About box
-local AboutBox = CreateRoundedFrame("AboutBox", InfoContent, 
-    UDim2.new(1, 0, 0, 200), 
-    UDim2.new(0, 0, 0, 40), 
-    Color3.fromRGB(30, 35, 45), 8)
-
-local AboutText = Instance.new("TextLabel")
-AboutText.Parent = AboutBox
-AboutText.Size = UDim2.new(1, -30, 1, -30)
-AboutText.Position = UDim2.new(0, 15, 0, 15)
-AboutText.BackgroundTransparency = 1
-AboutText.Text = [[
-LYORA SAMBUNG KATA ULTIMATE
-Version: 3.0.0
-Author: Lyora System
-Library: ZumHub + Custom GUI
-
-📌 FEATURES:
-• Auto Farm with AI
-• Discord Key System
-• Real-time Statistics
-• Anti-Ban Protection
-• Premium Integration
-
-🔧 REQUIREMENTS:
-• Discord Bot Integration
-• Valid License Key
-• Roblox Account Age > 3 days
-
-📞 SUPPORT:
-• Discord: discord.gg/]] .. Config.discordInvite .. [[
-• Email: support@lyora.com
-
-© 2025 Lyora System. All rights reserved.]]
-AboutText.Font = Enum.Font.Gotham
-AboutText.TextSize = 13
-AboutText.TextColor3 = Color3.fromRGB(200, 200, 200)
-AboutText.TextXAlignment = Enum.TextXAlignment.Left
-AboutText.TextYAlignment = Enum.TextYAlignment.Top
-
--- =========================================================
--- DISCORD TAB CONTENT
--- =========================================================
-
-local DiscordContent = Instance.new("Frame")
-DiscordContent.Parent = ContentArea
-DiscordContent.Name = "DiscordContent"
-DiscordContent.Size = UDim2.new(1, -20, 1, -20)
-DiscordContent.Position = UDim2.new(0, 10, 0, 10)
-DiscordContent.BackgroundTransparency = 1
-DiscordContent.Visible = false
-contentFrames["Discord"] = DiscordContent
-
--- Discord header
-local DiscordHeader = Instance.new("TextLabel")
-DiscordHeader.Parent = DiscordContent
-DiscordHeader.Size = UDim2.new(1, 0, 0, 30)
-DiscordHeader.BackgroundTransparency = 1
-DiscordHeader.Text = "💬 Discord Integration"
-DiscordHeader.Font = Enum.Font.GothamBold
-DiscordHeader.TextSize = 20
-DiscordHeader.TextColor3 = Config.textColor
-DiscordHeader.TextXAlignment = Enum.TextXAlignment.Left
-
--- Connection status
-local ConnCard = CreateRoundedFrame("ConnCard", DiscordContent, 
-    UDim2.new(1, 0, 0, 80), 
-    UDim2.new(0, 0, 0, 40), 
-    Color3.fromRGB(30, 35, 45), 8)
-
-local ConnIcon = Instance.new("TextLabel")
-ConnIcon.Parent = ConnCard
-ConnIcon.Size = UDim2.new(0, 40, 1, 0)
-ConnIcon.Position = UDim2.new(0, 15, 0, 0)
-ConnIcon.BackgroundTransparency = 1
-ConnIcon.Text = "🔗"
-ConnIcon.Font = Enum.Font.Gotham
-ConnIcon.TextSize = 30
-ConnIcon.TextColor3 = Config.textColor
-
-local ConnTitle = Instance.new("TextLabel")
-ConnTitle.Parent = ConnCard
-ConnTitle.Size = UDim2.new(0, 200, 0, 25)
-ConnTitle.Position = UDim2.new(0, 65, 0, 15)
-ConnTitle.BackgroundTransparency = 1
-ConnTitle.Text = "Discord Connection"
-ConnTitle.Font = Enum.Font.GothamBold
-ConnTitle.TextSize = 16
-ConnTitle.TextColor3 = Config.textColor
-ConnTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local ConnStatus = Instance.new("TextLabel")
-ConnStatus.Parent = ConnCard
-ConnStatus.Size = UDim2.new(0, 200, 0, 20)
-ConnStatus.Position = UDim2.new(0, 65, 0, 40)
-ConnStatus.BackgroundTransparency = 1
-ConnStatus.Text = "✅ Connected as " .. (userData.discordUser ~= "" and userData.discordUser or "Guest")
-ConnStatus.Font = Enum.Font.Gotham
-ConnStatus.TextSize = 12
-ConnStatus.TextColor3 = Color3.fromRGB(0, 255, 0)
-ConnStatus.TextXAlignment = Enum.TextXAlignment.Left
-
--- Key info
-local KeyCard = CreateRoundedFrame("KeyCard", DiscordContent, 
-    UDim2.new(1, 0, 0, 100), 
-    UDim2.new(0, 0, 0, 130), 
-    Color3.fromRGB(30, 35, 45), 8)
-
-local KeyIcon = Instance.new("TextLabel")
-KeyIcon.Parent = KeyCard
-KeyIcon.Size = UDim2.new(0, 40, 1, 0)
-KeyIcon.Position = UDim2.new(0, 15, 0, 0)
-KeyIcon.BackgroundTransparency = 1
-KeyIcon.Text = "🔑"
-KeyIcon.Font = Enum.Font.Gotham
-KeyIcon.TextSize = 30
-KeyIcon.TextColor3 = Config.textColor
-
-local KeyTitle = Instance.new("TextLabel")
-KeyTitle.Parent = KeyCard
-KeyTitle.Size = UDim2.new(0, 200, 0, 25)
-KeyTitle.Position = UDim2.new(0, 65, 0, 15)
-KeyTitle.BackgroundTransparency = 1
-KeyTitle.Text = "License Key"
-KeyTitle.Font = Enum.Font.GothamBold
-KeyTitle.TextSize = 16
-KeyTitle.TextColor3 = Config.textColor
-KeyTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-local KeyDisplay = Instance.new("TextLabel")
-KeyDisplay.Parent = KeyCard
-KeyDisplay.Size = UDim2.new(0, 300, 0, 25)
-KeyDisplay.Position = UDim2.new(0, 65, 0, 40)
-KeyDisplay.BackgroundTransparency = 1
-KeyDisplay.Text = userData.key or "No key loaded"
-KeyDisplay.Font = Enum.Font.Gotham
-KeyDisplay.TextSize = 14
-KeyDisplay.TextColor3 = Color3.fromRGB(0, 255, 200)
-KeyDisplay.TextXAlignment = Enum.TextXAlignment.Left
-
-local PremiumStatus = Instance.new("TextLabel")
-PremiumStatus.Parent = KeyCard
-PremiumStatus.Size = UDim2.new(0, 300, 0, 20)
-PremiumStatus.Position = UDim2.new(0, 65, 0, 65)
-PremiumStatus.BackgroundTransparency = 1
-PremiumStatus.Text = userData.premium and "✨ Premium Member" or "👤 Free Member"
-PremiumStatus.Font = Enum.Font.Gotham
-PremiumStatus.TextSize = 12
-PremiumStatus.TextColor3 = userData.premium and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(150, 150, 150)
-PremiumStatus.TextXAlignment = Enum.TextXAlignment.Left
-
--- Action buttons
-local BtnSection = Instance.new("Frame")
-BtnSection.Parent = DiscordContent
-BtnSection.Size = UDim2.new(1, 0, 0, 100)
-BtnSection.Position = UDim2.new(0, 0, 0, 240)
-BtnSection.BackgroundTransparency = 1
-
-local buttons = {
-    {name = "Copy User ID", icon = "📋", color = Config.mainColor},
-    {name = "Copy Key", icon = "🔑", color = Config.accentColor},
-    {name = "Join Discord", icon = "🔗", color = Color3.fromRGB(100, 200, 255)},
-    {name = "Sync Profile", icon = "🔄", color = Color3.fromRGB(255, 200, 100)}
-}
-
-for i, btn in ipairs(buttons) do
-    local btnFrame = CreateRoundedFrame("Btn" .. i, BtnSection, 
-        UDim2.new(0, 140, 0, 40), 
-        UDim2.new(0, (i-1) * 150, 0, 10), 
-        btn.color, 6)
-    
-    local btnText = Instance.new("TextLabel")
-    btnText.Parent = btnFrame
-    btnText.Size = UDim2.new(1, -10, 1, 0)
-    btnText.Position = UDim2.new(0, 5, 0, 0)
-    btnText.BackgroundTransparency = 1
-    btnText.Text = btn.icon .. " " .. btn.name
-    btnText.Font = Enum.Font.GothamBold
-    btnText.TextSize = 13
-    btnText.TextColor3 = Config.textColor
-    
-    local btnClick = Instance.new("TextButton")
-    btnClick.Parent = btnFrame
-    btnClick.Size = UDim2.new(1, 0, 1, 0)
-    btnClick.BackgroundTransparency = 1
-    btnClick.Text = ""
-    
-    btnClick.MouseButton1Click:Connect(function()
-        if btn.name == "Copy User ID" then
-            setclipboard(tostring(LocalPlayer.UserId))
-            -- Notifikasi sederhana
-            local notif = CreateRoundedFrame("Notif", ScreenGui, 
-                UDim2.new(0, 200, 0, 40), 
-                UDim2.new(0.5, -100, 0, 20), 
-                Config.mainColor, 8)
-            notif.ZIndex = 100
-            
-            local notifText = Instance.new("TextLabel")
-            notifText.Parent = notif
-            notifText.Size = UDim2.new(1, 0, 1, 0)
-            notifText.BackgroundTransparency = 1
-            notifText.Text = "✅ User ID Copied!"
-            notifText.Font = Enum.Font.GothamBold
-            notifText.TextSize = 14
-            notifText.TextColor3 = Config.textColor
-            
-            task.wait(2)
-            notif:Destroy()
-            
-        elseif btn.name == "Copy Key" then
-            setclipboard(userData.key or "NO_KEY")
-            local notif = CreateRoundedFrame("Notif", ScreenGui, 
-                UDim2.new(0, 200, 0, 40), 
-                UDim2.new(0.5, -100, 0, 20), 
-                Config.mainColor, 8)
-            notif.ZIndex = 100
-            
-            local notifText = Instance.new("TextLabel")
-            notifText.Parent = notif
-            notifText.Size = UDim2.new(1, 0, 1, 0)
-            notifText.BackgroundTransparency = 1
-            notifText.Text = "✅ Key Copied!"
-            notifText.Font = Enum.Font.GothamBold
-            notifText.TextSize = 14
-            notifText.TextColor3 = Config.textColor
-            
-            task.wait(2)
-            notif:Destroy()
-            
-        elseif btn.name == "Join Discord" then
-            local notif = CreateRoundedFrame("Notif", ScreenGui, 
-                UDim2.new(0, 250, 0, 50), 
-                UDim2.new(0.5, -125, 0, 20), 
-                Config.mainColor, 8)
-            notif.ZIndex = 100
-            
-            local notifText = Instance.new("TextLabel")
-            notifText.Parent = notif
-            notifText.Size = UDim2.new(1, -10, 0, 30)
-            notifText.Position = UDim2.new(0, 5, 0, 5)
-            notifText.BackgroundTransparency = 1
-            notifText.Text = "🔗 discord.gg/" .. Config.discordInvite
-            notifText.Font = Enum.Font.GothamBold
-            notifText.TextSize = 14
-            notifText.TextColor3 = Config.textColor
-            
-            local notifSub = Instance.new("TextLabel")
-            notifSub.Parent = notif
-            notifSub.Size = UDim2.new(1, -10, 0, 15)
-            notifSub.Position = UDim2.new(0, 5, 0, 30)
-            notifSub.BackgroundTransparency = 1
-            notifSub.Text = "Link copied to clipboard!"
-            notifSub.Font = Enum.Font.Gotham
-            notifSub.TextSize = 11
-            notifSub.TextColor3 = Color3.fromRGB(220, 220, 220)
-            
-            setclipboard("https://discord.gg/" .. Config.discordInvite)
-            
-            task.wait(3)
-            notif:Destroy()
-        end
-    end)
-end
-
--- =========================================================
--- SETTINGS TAB CONTENT
--- =========================================================
-
-local SettingsContent = Instance.new("Frame")
-SettingsContent.Parent = ContentArea
-SettingsContent.Name = "SettingsContent"
-SettingsContent.Size = UDim2.new(1, -20, 1, -20)
-SettingsContent.Position = UDim2.new(0, 10, 0, 10)
-SettingsContent.BackgroundTransparency = 1
-SettingsContent.Visible = false
-contentFrames["Settings"] = SettingsContent
-
--- Settings header
-local SettingsHeader = Instance.new("TextLabel")
-SettingsHeader.Parent = SettingsContent
-SettingsHeader.Size = UDim2.new(1, 0, 0, 30)
-SettingsHeader.BackgroundTransparency = 1
-SettingsHeader.Text = "🔧 Settings"
-SettingsHeader.Font = Enum.Font.GothamBold
-SettingsHeader.TextSize = 20
-SettingsHeader.TextColor3 = Config.textColor
-SettingsHeader.TextXAlignment = Enum.TextXAlignment.Left
-
--- UI Settings
-local UICard = CreateRoundedFrame("UICard", SettingsContent, 
-    UDim2.new(1, 0, 0, 150), 
-    UDim2.new(0, 0, 0, 40), 
-    Color3.fromRGB(30, 35, 45), 8)
-
-local UITitle = Instance.new("TextLabel")
-UITitle.Parent = UICard
-UITitle.Size = UDim2.new(1, -20, 0, 30)
-UITitle.Position = UDim2.new(0, 10, 0, 10)
-UITitle.BackgroundTransparency = 1
-UITitle.Text = "UI Settings"
-UITitle.Font = Enum.Font.GothamBold
-UITitle.TextSize = 16
-UITitle.TextColor3 = Config.textColor
-UITitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Keybind setting
-local KeybindLabel = Instance.new("TextLabel")
-KeybindLabel.Parent = UICard
-KeybindLabel.Size = UDim2.new(0, 150, 0, 25)
-KeybindLabel.Position = UDim2.new(0, 15, 0, 50)
-KeybindLabel.BackgroundTransparency = 1
-KeybindLabel.Text = "Toggle GUI Key:"
-KeybindLabel.Font = Enum.Font.Gotham
-KeybindLabel.TextSize = 14
-KeybindLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-KeybindLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-local KeybindBox = CreateRoundedFrame("KeybindBox", UICard, 
-    UDim2.new(0, 100, 0, 25), 
-    UDim2.new(0, 170, 0, 50), 
-    Color3.fromRGB(45, 50, 60), 4)
-
-local KeybindText = Instance.new("TextLabel")
-KeybindText.Parent = KeybindBox
-KeybindText.Size = UDim2.new(1, 0, 1, 0)
-KeybindText.BackgroundTransparency = 1
-KeybindText.Text = "RightShift"
-KeybindText.Font = Enum.Font.GothamBold
-KeybindText.TextSize = 12
-KeybindText.TextColor3 = Config.textColor
-
--- Toggle options
-local Toggles = {
-    {name = "Drag-able GUI", default = true, y = 85},
-    {name = "Save Settings", default = true, y = 115}
-}
-
-for _, tog in ipairs(Toggles) do
-    local tBg = CreateRoundedFrame("TogBg", UICard, 
-        UDim2.new(0, 40, 0, 20), 
-        UDim2.new(1, -60, 0, tog.y), 
-        tog.default and Config.mainColor or Color3.fromRGB(60, 60, 60), 10)
-    
-    local tCirc = CreateRoundedFrame("TogCirc", tBg, 
-        UDim2.new(0, 16, 0, 16), 
-        UDim2.new(0, tog.default and 22 or 2, 0.5, -8), 
-        Color3.fromRGB(255, 255, 255), 8)
-    
-    local tLabel = Instance.new("TextLabel")
-    tLabel.Parent = UICard
-    tLabel.Size = UDim2.new(0, 200, 0, 20)
-    tLabel.Position = UDim2.new(0, 15, 0, tog.y)
-    tLabel.BackgroundTransparency = 1
-    tLabel.Text = tog.name
-    tLabel.Font = Enum.Font.Gotham
-    tLabel.TextSize = 14
-    tLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    tLabel.TextXAlignment = Enum.TextXAlignment.Left
-end
-
--- Save button
-local SaveBtn = CreateRoundedFrame("SaveBtn", SettingsContent, 
-    UDim2.new(0, 200, 0, 40), 
-    UDim2.new(0, 0, 0, 200), 
-    Config.mainColor, 6)
-
-local SaveText = Instance.new("TextLabel")
-SaveText.Parent = SaveBtn
-SaveText.Size = UDim2.new(1, 0, 1, 0)
-SaveText.BackgroundTransparency = 1
-SaveText.Text = "💾 Save Settings"
-SaveText.Font = Enum.Font.GothamBold
-SaveText.TextSize = 16
-SaveText.TextColor3 = Config.textColor
-
-local SaveClick = Instance.new("TextButton")
-SaveClick.Parent = SaveBtn
-SaveClick.Size = UDim2.new(1, 0, 1, 0)
-SaveClick.BackgroundTransparency = 1
-SaveClick.Text = ""
-
-SaveClick.MouseButton1Click:Connect(function()
-    local notif = CreateRoundedFrame("Notif", ScreenGui, 
-        UDim2.new(0, 200, 0, 40), 
-        UDim2.new(0.5, -100, 0, 20), 
-        Config.mainColor, 8)
-    notif.ZIndex = 100
-    
-    local notifText = Instance.new("TextLabel")
-    notifText.Parent = notif
-    notifText.Size = UDim2.new(1, 0, 1, 0)
-    notifText.BackgroundTransparency = 1
-    notifText.Text = "✅ Settings Saved!"
-    notifText.Font = Enum.Font.GothamBold
-    notifText.TextSize = 14
-    notifText.TextColor3 = Config.textColor
-    
-    task.wait(2)
-    notif:Destroy()
-end)
-
--- =========================================================
--- CLOSE & MINIMIZE FUNCTIONS
--- =========================================================
+CloseBtn.Size = UDim2.new(0, 35, 0, 35)
+CloseBtn.Position = UDim2.new(1, -45, 0.5, -17.5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+CloseBtn.Text = "✕"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 20
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.BorderSizePixel = 0
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseBtn
 
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
+-- Minimize Button
+local MinBtn = Instance.new("TextButton")
+MinBtn.Parent = Header
+MinBtn.Size = UDim2.new(0, 35, 0, 35)
+MinBtn.Position = UDim2.new(1, -90, 0.5, -17.5)
+MinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+MinBtn.Text = "—"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 25
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.BorderSizePixel = 0
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 8)
+MinCorner.Parent = MinBtn
+
 local minimized = false
-local originalSize = MainFrame.Size
 MinBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
-        MainFrame.Size = UDim2.new(0, 300, 0, 50)
-        TabContainer.Visible = false
-        ContentArea.Visible = false
-        MinBtn.ImageColor3 = Color3.fromRGB(255, 255, 0)
+        MainFrame.Size = UDim2.new(0, 450, 0, 50)
+        ContentFrame.Visible = false
+        MinBtn.Text = "□"
     else
-        MainFrame.Size = originalSize
-        TabContainer.Visible = true
-        ContentArea.Visible = true
-        MinBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        MainFrame.Size = UDim2.new(0, 450, 0, 550)
+        ContentFrame.Visible = true
+        MinBtn.Text = "—"
     end
 end)
 
 -- =========================================================
--- KEYBIND TOGGLE
+-- CONTENT FRAME (UNTUK KEY SYSTEM)
+-- =========================================================
+
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Parent = MainFrame
+ContentFrame.Size = UDim2.new(1, -20, 1, -70)
+ContentFrame.Position = UDim2.new(0, 10, 0, 60)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
+ContentFrame.BorderSizePixel = 0
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0, 8)
+ContentCorner.Parent = ContentFrame
+
+-- AVATAR SECTION
+local AvatarFrame = Instance.new("Frame")
+AvatarFrame.Parent = ContentFrame
+AvatarFrame.Size = UDim2.new(1, -20, 0, 80)
+AvatarFrame.Position = UDim2.new(0, 10, 0, 10)
+AvatarFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+AvatarFrame.BorderSizePixel = 0
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(0, 8)
+AvatarCorner.Parent = AvatarFrame
+
+-- Avatar Image
+local Avatar = Instance.new("ImageLabel")
+Avatar.Parent = AvatarFrame
+Avatar.Size = UDim2.new(0, 60, 0, 60)
+Avatar.Position = UDim2.new(0, 10, 0.5, -30)
+Avatar.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420"
+
+local AvatarImgCorner = Instance.new("UICorner")
+AvatarImgCorner.CornerRadius = UDim.new(0, 30)
+AvatarImgCorner.Parent = Avatar
+
+-- Username
+local UsernameLabel = Instance.new("TextLabel")
+UsernameLabel.Parent = AvatarFrame
+UsernameLabel.Size = UDim2.new(0, 250, 0, 30)
+UsernameLabel.Position = UDim2.new(0, 80, 0, 15)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.Text = LocalPlayer.Name
+UsernameLabel.Font = Enum.Font.GothamBold
+UsernameLabel.TextSize = 20
+UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- User ID
+local UserIdLabel = Instance.new("TextLabel")
+UserIdLabel.Parent = AvatarFrame
+UserIdLabel.Size = UDim2.new(0, 250, 0, 20)
+UserIdLabel.Position = UDim2.new(0, 80, 0, 45)
+UserIdLabel.BackgroundTransparency = 1
+UserIdLabel.Text = "ID: " .. LocalPlayer.UserId
+UserIdLabel.Font = Enum.Font.Gotham
+UserIdLabel.TextSize = 14
+UserIdLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+UserIdLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- KEY INPUT SECTION
+local KeyFrame = Instance.new("Frame")
+KeyFrame.Parent = ContentFrame
+KeyFrame.Size = UDim2.new(1, -20, 0, 180)
+KeyFrame.Position = UDim2.new(0, 10, 0, 100)
+KeyFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+KeyFrame.BorderSizePixel = 0
+
+local KeyCorner = Instance.new("UICorner")
+KeyCorner.CornerRadius = UDim.new(0, 8)
+KeyCorner.Parent = KeyFrame
+
+-- Key Title
+local KeyTitle = Instance.new("TextLabel")
+KeyTitle.Parent = KeyFrame
+KeyTitle.Size = UDim2.new(1, -20, 0, 30)
+KeyTitle.Position = UDim2.new(0, 10, 0, 10)
+KeyTitle.BackgroundTransparency = 1
+KeyTitle.Text = "🔑 VERIFIKASI KEY"
+KeyTitle.Font = Enum.Font.GothamBold
+KeyTitle.TextSize = 16
+KeyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Key Description
+local KeyDesc = Instance.new("TextLabel")
+KeyDesc.Parent = KeyFrame
+KeyDesc.Size = UDim2.new(1, -20, 0, 40)
+KeyDesc.Position = UDim2.new(0, 10, 0, 40)
+KeyDesc.BackgroundTransparency = 1
+KeyDesc.Text = "Masukkan key yang didapat dari Discord bot\nuntuk mengaktifkan script"
+KeyDesc.Font = Enum.Font.Gotham
+KeyDesc.TextSize = 12
+KeyDesc.TextColor3 = Color3.fromRGB(180, 180, 180)
+KeyDesc.TextXAlignment = Enum.TextXAlignment.Left
+KeyDesc.TextYAlignment = Enum.TextYAlignment.Top
+
+-- Key Input Box
+local KeyInputFrame = Instance.new("Frame")
+KeyInputFrame.Parent = KeyFrame
+KeyInputFrame.Size = UDim2.new(1, -20, 0, 40)
+KeyInputFrame.Position = UDim2.new(0, 10, 0, 85)
+KeyInputFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+KeyInputFrame.BorderSizePixel = 0
+
+local KeyInputCorner = Instance.new("UICorner")
+KeyInputCorner.CornerRadius = UDim.new(0, 6)
+KeyInputCorner.Parent = KeyInputFrame
+
+local KeyInput = Instance.new("TextBox")
+KeyInput.Parent = KeyInputFrame
+KeyInput.Size = UDim2.new(1, -10, 1, 0)
+KeyInput.Position = UDim2.new(0, 5, 0, 0)
+KeyInput.BackgroundTransparency = 1
+KeyInput.PlaceholderText = "Contoh: LYORA-XXXX-XXXX"
+KeyInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+KeyInput.Text = ""
+KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.Font = Enum.Font.Gotham
+KeyInput.TextSize = 14
+KeyInput.ClearTextOnFocus = false
+
+-- Verify Button
+local VerifyBtn = Instance.new("TextButton")
+VerifyBtn.Parent = KeyFrame
+VerifyBtn.Size = UDim2.new(1, -20, 0, 45)
+VerifyBtn.Position = UDim2.new(0, 10, 0, 135)
+VerifyBtn.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+VerifyBtn.Text = "VERIFIKASI KEY"
+VerifyBtn.Font = Enum.Font.GothamBold
+VerifyBtn.TextSize = 16
+VerifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+VerifyBtn.BorderSizePixel = 0
+
+local VerifyCorner = Instance.new("UICorner")
+VerifyCorner.CornerRadius = UDim.new(0, 6)
+VerifyCorner.Parent = VerifyBtn
+
+-- DISCORD INFO SECTION
+local DiscordFrame = Instance.new("Frame")
+DiscordFrame.Parent = ContentFrame
+DiscordFrame.Size = UDim2.new(1, -20, 0, 140)
+DiscordFrame.Position = UDim2.new(0, 10, 0, 290)
+DiscordFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+DiscordFrame.BorderSizePixel = 0
+
+local DiscordCorner = Instance.new("UICorner")
+DiscordCorner.CornerRadius = UDim.new(0, 8)
+DiscordCorner.Parent = DiscordFrame
+
+-- Discord Title
+local DiscordTitle = Instance.new("TextLabel")
+DiscordTitle.Parent = DiscordFrame
+DiscordTitle.Size = UDim2.new(1, -20, 0, 30)
+DiscordTitle.Position = UDim2.new(0, 10, 0, 10)
+DiscordTitle.BackgroundTransparency = 1
+DiscordTitle.Text = "💬 BELUM PUNYA KEY?"
+DiscordTitle.Font = Enum.Font.GothamBold
+DiscordTitle.TextSize = 16
+DiscordTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+DiscordTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Instructions
+local Instructions = Instance.new("TextLabel")
+Instructions.Parent = DiscordFrame
+Instructions.Size = UDim2.new(1, -20, 0, 50)
+Instructions.Position = UDim2.new(0, 10, 0, 40)
+Instructions.BackgroundTransparency = 1
+Instructions.Text = "1. Join Discord server\n2. Ketik /getkey " .. LocalPlayer.UserId .. "\n3. Copy key dari bot"
+Instructions.Font = Enum.Font.Gotham
+Instructions.TextSize = 12
+Instructions.TextColor3 = Color3.fromRGB(180, 180, 180)
+Instructions.TextXAlignment = Enum.TextXAlignment.Left
+Instructions.TextYAlignment = Enum.TextYAlignment.Top
+
+-- Buttons
+local ButtonFrame = Instance.new("Frame")
+ButtonFrame.Parent = DiscordFrame
+ButtonFrame.Size = UDim2.new(1, -20, 0, 35)
+ButtonFrame.Position = UDim2.new(0, 10, 0, 95)
+ButtonFrame.BackgroundTransparency = 1
+
+-- Copy ID Button
+local CopyIdBtn = Instance.new("TextButton")
+CopyIdBtn.Parent = ButtonFrame
+CopyIdBtn.Size = UDim2.new(0, 120, 1, 0)
+CopyIdBtn.Position = UDim2.new(0, 0, 0, 0)
+CopyIdBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+CopyIdBtn.Text = "📋 Copy ID"
+CopyIdBtn.Font = Enum.Font.GothamBold
+CopyIdBtn.TextSize = 12
+CopyIdBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopyIdBtn.BorderSizePixel = 0
+
+local CopyCorner = Instance.new("UICorner")
+CopyCorner.CornerRadius = UDim.new(0, 6)
+CopyCorner.Parent = CopyIdBtn
+
+-- Join Discord Button
+local JoinBtn = Instance.new("TextButton")
+JoinBtn.Parent = ButtonFrame
+JoinBtn.Size = UDim2.new(0, 130, 1, 0)
+JoinBtn.Position = UDim2.new(0, 130, 0, 0)
+JoinBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)  -- Discord color
+JoinBtn.Text = "🔗 Join Discord"
+JoinBtn.Font = Enum.Font.GothamBold
+JoinBtn.TextSize = 12
+JoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinBtn.BorderSizePixel = 0
+
+local JoinCorner = Instance.new("UICorner")
+JoinCorner.CornerRadius = UDim.new(0, 6)
+JoinCorner.Parent = JoinBtn
+
+-- STATUS LABEL
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Parent = ContentFrame
+StatusLabel.Size = UDim2.new(1, -20, 0, 30)
+StatusLabel.Position = UDim2.new(0, 10, 0, 440)
+StatusLabel.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+StatusLabel.Text = "⏳ Menunggu input key..."
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 12
+StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+
+local StatusCorner = Instance.new("UICorner")
+StatusCorner.CornerRadius = UDim.new(0, 6)
+StatusCorner.Parent = StatusLabel
+
+-- =========================================================
+-- FUNGSI NOTIFIKASI
+-- =========================================================
+
+local function showNotification(message, isSuccess)
+    local notif = Instance.new("Frame")
+    notif.Parent = ScreenGui
+    notif.Size = UDim2.new(0, 300, 0, 50)
+    notif.Position = UDim2.new(0.5, -150, 0, 10)
+    notif.BackgroundColor3 = isSuccess and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(255, 70, 70)
+    notif.BorderSizePixel = 0
+    notif.ZIndex = 100
+
+    local notifCorner = Instance.new("UICorner")
+    notifCorner.CornerRadius = UDim.new(0, 8)
+    notifCorner.Parent = notif
+
+    local notifText = Instance.new("TextLabel")
+    notifText.Parent = notif
+    notifText.Size = UDim2.new(1, -20, 1, 0)
+    notifText.Position = UDim2.new(0, 10, 0, 0)
+    notifText.BackgroundTransparency = 1
+    notifText.Text = message
+    notifText.Font = Enum.Font.GothamBold
+    notifText.TextSize = 14
+    notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    notifText.TextWrapped = true
+
+    task.wait(3)
+    notif:Destroy()
+end
+
+-- =========================================================
+-- FUNGSI VERIFIKASI
+-- =========================================================
+
+VerifyBtn.MouseButton1Click:Connect(function()
+    local key = KeyInput.Text
+    if key == "" then
+        showNotification("❌ Masukkan key terlebih dahulu!", false)
+        return
+    end
+    
+    StatusLabel.Text = "⏳ Memverifikasi key..."
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+    
+    local success, result = verifyKey(key)
+    
+    if success and result.valid then
+        userData.isVerified = true
+        userData.key = key
+        userData.discordUser = result.discordUser
+        userData.role = result.role
+        userData.premium = result.premium
+        
+        StatusLabel.Text = "✅ VERIFIKASI BERHASIL! Selamat datang " .. userData.discordUser
+        StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        
+        showNotification("✅ Verifikasi berhasil! Mengaktifkan fitur...", true)
+        
+        -- GANTI TAMPILAN JADI MAIN MENU
+        loadMainMenu()
+        
+    else
+        StatusLabel.Text = "❌ Key tidak valid! Coba lagi."
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 70, 70)
+        showNotification("❌ Key salah! Dapatkan key di Discord", false)
+    end
+end)
+
+-- =========================================================
+-- BUTTON FUNCTIONS
+-- =========================================================
+
+CopyIdBtn.MouseButton1Click:Connect(function()
+    setclipboard(tostring(LocalPlayer.UserId))
+    showNotification("✅ User ID dicopy ke clipboard!", true)
+end)
+
+JoinBtn.MouseButton1Click:Connect(function()
+    setclipboard("https://discord.gg/" .. DISCORD_CONFIG.inviteCode)
+    showNotification("🔗 Link Discord dicopy ke clipboard!", true)
+end)
+
+-- =========================================================
+-- LOAD MAIN MENU (SETELAH VERIFIKASI)
+-- =========================================================
+
+function loadMainMenu()
+    -- Bersihkan content frame
+    for _, child in ipairs(ContentFrame:GetChildren()) do
+        child:Destroy()
+    end
+    
+    -- Ganti title
+    Title.Text = "🎀 LYORA SAMBUNG KATA"
+    
+    -- Profile Section
+    local ProfileFrame = Instance.new("Frame")
+    ProfileFrame.Parent = ContentFrame
+    ProfileFrame.Size = UDim2.new(1, -20, 0, 70)
+    ProfileFrame.Position = UDim2.new(0, 10, 0, 10)
+    ProfileFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+    ProfileFrame.BorderSizePixel = 0
+    
+    local ProfileCorner = Instance.new("UICorner")
+    ProfileCorner.CornerRadius = UDim.new(0, 8)
+    ProfileCorner.Parent = ProfileFrame
+    
+    local AvatarSmall = Instance.new("ImageLabel")
+    AvatarSmall.Parent = ProfileFrame
+    AvatarSmall.Size = UDim2.new(0, 50, 0, 50)
+    AvatarSmall.Position = UDim2.new(0, 10, 0.5, -25)
+    AvatarSmall.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+    AvatarSmall.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420"
+    
+    local AvatarSmallCorner = Instance.new("UICorner")
+    AvatarSmallCorner.CornerRadius = UDim.new(0, 25)
+    AvatarSmallCorner.Parent = AvatarSmall
+    
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Parent = ProfileFrame
+    NameLabel.Size = UDim2.new(0, 200, 0, 25)
+    NameLabel.Position = UDim2.new(0, 70, 0, 15)
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.Text = LocalPlayer.Name
+    NameLabel.Font = Enum.Font.GothamBold
+    NameLabel.TextSize = 18
+    NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local RoleLabel = Instance.new("TextLabel")
+    RoleLabel.Parent = ProfileFrame
+    RoleLabel.Size = UDim2.new(0, 200, 0, 20)
+    RoleLabel.Position = UDim2.new(0, 70, 0, 40)
+    RoleLabel.BackgroundTransparency = 1
+    RoleLabel.Text = userData.premium and "✨ Premium Member" or "👤 Free Member"
+    RoleLabel.Font = Enum.Font.Gotham
+    RoleLabel.TextSize = 12
+    RoleLabel.TextColor3 = userData.premium and Color3.fromRGB(255, 215, 0) or Color3.fromRGB(180, 180, 180)
+    RoleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Stats Grid
+    local StatsFrame = Instance.new("Frame")
+    StatsFrame.Parent = ContentFrame
+    StatsFrame.Size = UDim2.new(1, -20, 0, 80)
+    StatsFrame.Position = UDim2.new(0, 10, 0, 90)
+    StatsFrame.BackgroundTransparency = 1
+    
+    local stats = {
+        {label = "Games", value = "0", icon = "🎮"},
+        {label = "Streak", value = "0", icon = "🔥"},
+        {label = "Words", value = "0", icon = "📝"},
+        {label = "Acc", value = "0%", icon = "🎯"}
+    }
+    
+    for i, stat in ipairs(stats) do
+        local card = Instance.new("Frame")
+        card.Parent = StatsFrame
+        card.Size = UDim2.new(0, 100, 1, 0)
+        card.Position = UDim2.new(0, (i-1) * 105, 0, 0)
+        card.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+        card.BorderSizePixel = 0
+        
+        local cardCorner = Instance.new("UICorner")
+        cardCorner.CornerRadius = UDim.new(0, 6)
+        cardCorner.Parent = card
+        
+        local icon = Instance.new("TextLabel")
+        icon.Parent = card
+        icon.Size = UDim2.new(1, 0, 0, 25)
+        icon.Position = UDim2.new(0, 0, 0, 10)
+        icon.BackgroundTransparency = 1
+        icon.Text = stat.icon .. " " .. stat.value
+        icon.Font = Enum.Font.GothamBold
+        icon.TextSize = 16
+        icon.TextColor3 = Color3.fromRGB(255, 105, 180)
+        
+        local label = Instance.new("TextLabel")
+        label.Parent = card
+        label.Size = UDim2.new(1, 0, 0, 20)
+        label.Position = UDim2.new(0, 0, 0, 45)
+        label.BackgroundTransparency = 1
+        label.Text = stat.label
+        label.Font = Enum.Font.Gotham
+        label.TextSize = 11
+        label.TextColor3 = Color3.fromRGB(150, 150, 150)
+    end
+    
+    -- Auto Farm Section
+    local AutoFrame = Instance.new("Frame")
+    AutoFrame.Parent = ContentFrame
+    AutoFrame.Size = UDim2.new(1, -20, 0, 100)
+    AutoFrame.Position = UDim2.new(0, 10, 0, 180)
+    AutoFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+    AutoFrame.BorderSizePixel = 0
+    
+    local AutoCorner = Instance.new("UICorner")
+    AutoCorner.CornerRadius = UDim.new(0, 8)
+    AutoCorner.Parent = AutoFrame
+    
+    local AutoTitle = Instance.new("TextLabel")
+    AutoTitle.Parent = AutoFrame
+    AutoTitle.Size = UDim2.new(1, -20, 0, 30)
+    AutoTitle.Position = UDim2.new(0, 10, 0, 10)
+    AutoTitle.BackgroundTransparency = 1
+    AutoTitle.Text = "⚡ AUTO FARM"
+    AutoTitle.Font = Enum.Font.GothamBold
+    AutoTitle.TextSize = 16
+    AutoTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AutoTitle.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Toggle
+    local ToggleBg = Instance.new("Frame")
+    ToggleBg.Parent = AutoFrame
+    ToggleBg.Size = UDim2.new(0, 50, 0, 25)
+    ToggleBg.Position = UDim2.new(1, -60, 0, 10)
+    ToggleBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    ToggleBg.BorderSizePixel = 0
+    
+    local ToggleCorner = Instance.new("UICorner")
+    ToggleCorner.CornerRadius = UDim.new(0, 12)
+    ToggleCorner.Parent = ToggleBg
+    
+    local ToggleCircle = Instance.new("Frame")
+    ToggleCircle.Parent = ToggleBg
+    ToggleCircle.Size = UDim2.new(0, 21, 0, 21)
+    ToggleCircle.Position = UDim2.new(0, 2, 0.5, -10.5)
+    ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleCircle.BorderSizePixel = 0
+    
+    local ToggleCircleCorner = Instance.new("UICorner")
+    ToggleCircleCorner.CornerRadius = UDim.new(0, 10)
+    ToggleCircleCorner.Parent = ToggleCircle
+    
+    local toggleState = false
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Parent = ToggleBg
+    ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
+    ToggleBtn.BackgroundTransparency = 1
+    ToggleBtn.Text = ""
+    
+    ToggleBtn.MouseButton1Click:Connect(function()
+        toggleState = not toggleState
+        if toggleState then
+            ToggleBg.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+            ToggleCircle:TweenPosition(UDim2.new(0, 27, 0.5, -10.5), "Out", "Quad", 0.2)
+        else
+            ToggleBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            ToggleCircle:TweenPosition(UDim2.new(0, 2, 0.5, -10.5), "Out", "Quad", 0.2)
+        end
+    end)
+    
+    -- Delay Slider
+    local DelayLabel = Instance.new("TextLabel")
+    DelayLabel.Parent = AutoFrame
+    DelayLabel.Size = UDim2.new(0, 100, 0, 20)
+    DelayLabel.Position = UDim2.new(0, 10, 0, 50)
+    DelayLabel.BackgroundTransparency = 1
+    DelayLabel.Text = "Delay: 350ms"
+    DelayLabel.Font = Enum.Font.Gotham
+    DelayLabel.TextSize = 12
+    DelayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Discord Info
+    local DiscordInfo = Instance.new("TextLabel")
+    DiscordInfo.Parent = AutoFrame
+    DiscordInfo.Size = UDim2.new(1, -20, 0, 20)
+    DiscordInfo.Position = UDim2.new(0, 10, 0, 75)
+    DiscordInfo.BackgroundTransparency = 1
+    DiscordInfo.Text = "💬 Discord: " .. userData.discordUser .. " | Role: " .. userData.role
+    DiscordInfo.Font = Enum.Font.Gotham
+    DiscordInfo.TextSize = 11
+    DiscordInfo.TextColor3 = Color3.fromRGB(150, 150, 150)
+    DiscordInfo.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Version
+    local Version = Instance.new("TextLabel")
+    Version.Parent = ContentFrame
+    Version.Size = UDim2.new(1, -20, 0, 30)
+    Version.Position = UDim2.new(0, 10, 0, 290)
+    Version.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+    Version.Text = "Lyora Sambung Kata v3.0 • Premium: " .. (userData.premium and "✅" or "❌")
+    Version.Font = Enum.Font.Gotham
+    Version.TextSize = 11
+    Version.TextColor3 = Color3.fromRGB(150, 150, 150)
+    
+    local VersionCorner = Instance.new("UICorner")
+    VersionCorner.CornerRadius = UDim.new(0, 6)
+    VersionCorner.Parent = Version
+end
+
+-- =========================================================
+-- KEYBIND TOGGLE (RightShift)
 -- =========================================================
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -1086,15 +705,14 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     
     if input.KeyCode == Enum.KeyCode.RightShift then
         MainFrame.Visible = not MainFrame.Visible
-        blur.Visible = MainFrame.Visible
     end
 end)
 
 -- =========================================================
--- INITIALIZATION
+-- INIT
 -- =========================================================
 
-print("✅ LYORA CUSTOM GUI LOADED!")
+print("✅ LYORA GUI + KEY SYSTEM LOADED")
 print("👤 User: " .. LocalPlayer.Name)
 print("🔑 User ID: " .. LocalPlayer.UserId)
 print("📱 Platform: " .. (UserInputService.TouchEnabled and "Android" or "PC"))
