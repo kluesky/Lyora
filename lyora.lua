@@ -18,10 +18,10 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- =========================
--- PASTEFY KEY SYSTEM
+-- PASTEFY KEY SYSTEM (FIXED API)
 -- =========================
-local PASTE_ID = "EvFSBcDy"  -- << GANTI DENGAN ID PASTE LU!
-local DISCORD_INVITE = "cvaHe2rXnk"  -- GANTI DENGAN INVITE DISCORD LU
+local PASTE_ID = "EvFSBcDy"  -- ID paste lu
+local DISCORD_INVITE = "cvaHe2rXnk"  -- invite Discord lu
 
 local userData = {
     userId = tostring(LocalPlayer.UserId),
@@ -33,21 +33,65 @@ local userData = {
     premium = false
 }
 
+-- =========================
+-- FUNGSI VERIFIKASI KEY (PAKAI API ENDPOINT)
+-- =========================
 local function verifyKey(key)
+    -- Validasi format key (LYORA-XXXX-XXXX)
     if not key:match("^LYORA%-%w%w%w%w%-%w%w%w%w$") then
         return { valid = false, message = "❌ Format key salah! Harus LYORA-XXXX-XXXX" }
     end
     
+    -- PAKE API ENDPOINT, BUKAN RAW!
+    local url = "https://pastefy.app/api/v2/paste/" .. PASTE_ID
+    print("📌 Fetching from API: " .. url)
+    
     local success, response = pcall(function()
-        return game:HttpGet("https://pastefy.app/raw/" .. PASTE_ID)
+        return game:HttpGet(url)
     end)
     
     if not success then
-        return { valid = false, message = "❌ Gagal memuat database key" }
+        warn("❌ Gagal fetch: " .. tostring(response))
+        return { valid = false, message = "❌ Gagal terhubung ke server" }
     end
     
-    local db = HttpService:JSONDecode(response)
-    local keyData = db.keys and db.keys[key]
+    if not response or response == "" then
+        return { valid = false, message = "❌ Response kosong" }
+    end
+    
+    -- Parse response API (lapis 1)
+    local success, apiData = pcall(function()
+        return HttpService:JSONDecode(response)
+    end)
+    
+    if not success then
+        return { valid = false, message = "❌ Gagal parse response" }
+    end
+    
+    if not apiData or not apiData.paste then
+        return { valid = false, message = "❌ Struktur API salah" }
+    end
+    
+    -- Ambil content (masih berupa string JSON)
+    local contentStr = apiData.paste.content
+    if not contentStr then
+        return { valid = false, message = "❌ Content kosong" }
+    end
+    
+    -- Parse content (lapis 2) - INI DIA!
+    local success, db = pcall(function()
+        return HttpService:JSONDecode(contentStr)
+    end)
+    
+    if not success then
+        return { valid = false, message = "❌ Gagal parse database" }
+    end
+    
+    if not db or not db.keys then
+        return { valid = false, message = "❌ Database key rusak" }
+    end
+    
+    local keyData = db.keys[key]
     
     if not keyData then
         return { valid = false, message = "❌ Key tidak terdaftar!" }
@@ -57,7 +101,7 @@ local function verifyKey(key)
         return { valid = false, message = "⏰ Key sudah expired! (3 jam)" }
     end
     
-    if keyData.userId ~= userData.userId then
+    if tostring(keyData.userId) ~= userData.userId then
         return { valid = false, message = "❌ User ID tidak cocok!" }
     end
     
@@ -67,9 +111,9 @@ local function verifyKey(key)
     
     return {
         valid = true,
-        discordUser = keyData.discordUser,
+        discordUser = keyData.discordName or keyData.discordTag or "User",
         expiresAt = keyData.expiresAt,
-        message = "✅ Selamat datang " .. keyData.discordUser .. "!"
+        message = "✅ Selamat datang " .. (keyData.discordName or keyData.discordTag or "User") .. "!"
     }
 end
 
@@ -446,7 +490,7 @@ local function showNotification(message, isSuccess)
     notif:Destroy()
 end
 
--- VERIFY BUTTON FUNCTION
+-- VERIFY BUTTON FUNCTION (UPDATED WITH DEBUG)
 VerifyBtn.MouseButton1Click:Connect(function()
     local key = KeyInput.Text
     if key == "" then
@@ -454,10 +498,16 @@ VerifyBtn.MouseButton1Click:Connect(function()
         return
     end
     
-    StatusLabel.Text = "⏳ Memverifikasi key ke Pastefy..."
+    StatusLabel.Text = "⏳ Memverifikasi key ke Pastefy API..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
     
+    print("🔑 Verifying key: " .. key)
+    print("📌 Paste ID: " .. PASTE_ID)
+    
     local result = verifyKey(key)
+    
+    print("📌 Result valid:", result.valid)
+    print("📌 Message:", result.message)
     
     if result.valid then
         userData.isVerified = true
@@ -493,7 +543,7 @@ JoinBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =========================
--- LOAD WORDLIST
+-- LOAD WORDLIST (LOGIC CHEAT)
 -- =========================
 local kataModule = {}
 
@@ -527,8 +577,10 @@ if not wordOk or #kataModule == 0 then
     return
 end
 
+print("Wordlist Loaded:", #kataModule)
+
 -- =========================
--- REMOTES
+-- REMOTES (LOGIC CHEAT)
 -- =========================
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 
@@ -540,7 +592,7 @@ local TypeSound = remotes:WaitForChild("TypeSound")
 local UsedWordWarn = remotes:WaitForChild("UsedWordWarn")
 
 -- =========================
--- STATE
+-- STATE (LOGIC CHEAT)
 -- =========================
 local matchActive = false
 local isMyTurn = false
@@ -562,7 +614,7 @@ local config = {
 }
 
 -- =========================
--- LOGIC FUNCTIONS
+-- LOGIC FUNCTIONS (LOGIC CHEAT)
 -- =========================
 local function isUsed(word)
     return usedWords[string.lower(word)] == true
@@ -622,7 +674,7 @@ local function humanDelay()
 end
 
 -- =========================
--- AUTO ENGINE
+-- AUTO ENGINE (LOGIC CHEAT)
 -- =========================
 local function startUltraAI()
     if autoRunning then return end
@@ -970,7 +1022,7 @@ function startMainGUI()
     UsedCount.TextColor3 = Color3.fromRGB(180, 180, 180)
     UsedCount.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Remote event handlers
+    -- Remote event handlers (LOGIC CHEAT)
     MatchUI.OnClientEvent:Connect(function(cmd, value)
         if cmd == "ShowMatchUI" then
             matchActive = true
@@ -1036,6 +1088,5 @@ end)
 -- INIT
 -- =========================
 print("✅ LYORA CUSTOM GUI + PASTEFY KEY SYSTEM LOADED")
-print("📌 PASTE ID: " .. PASTE_ID)
 print("👤 User: " .. LocalPlayer.Name)
 print("🔑 User ID: " .. LocalPlayer.UserId)
