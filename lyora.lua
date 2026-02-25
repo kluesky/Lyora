@@ -37,50 +37,33 @@ local userData = {
 -- FUNGSI VERIFIKASI KEY (PAKAI API ENDPOINT)
 -- =========================
 local function verifyKey(key)
-    -- Validasi format key (LYORA-XXXX-XXXX)
     if not key:match("^LYORA%-%w%w%w%w%-%w%w%w%w$") then
         return { valid = false, message = "❌ Format key salah! Harus LYORA-XXXX-XXXX" }
     end
     
-    -- PAKE API ENDPOINT, BUKAN RAW!
     local url = "https://pastefy.app/api/v2/paste/" .. PASTE_ID
-    print("📌 Fetching from API: " .. url)
+    print("📌 Fetching: " .. url)
     
     local success, response = pcall(function()
         return game:HttpGet(url)
     end)
     
     if not success then
-        warn("❌ Gagal fetch: " .. tostring(response))
-        return { valid = false, message = "❌ Gagal terhubung ke server" }
+        return { valid = false, message = "❌ Gagal fetch dari Pastefy" }
     end
     
-    if not response or response == "" then
-        return { valid = false, message = "❌ Response kosong" }
-    end
-    
-    -- Parse response API (lapis 1)
-    local success, apiData = pcall(function()
+    -- Parse response
+    local success, data = pcall(function()
         return HttpService:JSONDecode(response)
     end)
     
     if not success then
-        return { valid = false, message = "❌ Gagal parse response" }
+        return { valid = false, message = "❌ Gagal parse JSON" }
     end
     
-    if not apiData or not apiData.paste then
-        return { valid = false, message = "❌ Struktur API salah" }
-    end
-    
-    -- Ambil content (masih berupa string JSON)
-    local contentStr = apiData.paste.content
-    if not contentStr then
-        return { valid = false, message = "❌ Content kosong" }
-    end
-    
-    -- Parse content (lapis 2) - INI DIA!
+    -- Langsung parse content sebagai JSON (karena content itu string JSON)
     local success, db = pcall(function()
-        return HttpService:JSONDecode(contentStr)
+        return HttpService:JSONDecode(data.content)
     end)
     
     if not success then
@@ -112,7 +95,6 @@ local function verifyKey(key)
     return {
         valid = true,
         discordUser = keyData.discordName or keyData.discordTag or "User",
-        expiresAt = keyData.expiresAt,
         message = "✅ Selamat datang " .. (keyData.discordName or keyData.discordTag or "User") .. "!"
     }
 end
