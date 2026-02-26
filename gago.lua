@@ -1,5 +1,5 @@
 -- =========================================================
--- LYORA CHEAT SCRIPT (LOADED AFTER VERIFICATION)
+-- LYORA CHEAT SCRIPT - AXION UI (FIXED)
 -- =========================================================
 
 if game:IsLoaded() == false then
@@ -16,7 +16,7 @@ local userData = _G.LyoraUserData or {
 print("✅ Cheat script loaded for: " .. userData.discordUser)
 
 -- =========================
--- LOAD LIBRARY (GANTI SESUAI KEINGINAN)
+-- LOAD AXION UI LIBRARY
 -- =========================
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/adamowaissi22-boop/Axom-Scripts-/refs/heads/main/Axion%20Ui%20Library"))()
 
@@ -194,55 +194,163 @@ local function startUltraAI()
 end
 
 -- =========================
--- CREATE MAIN GUI (AXION UI)
+-- CREATE MAIN GUI (AXION UI) - FIXED SYNTAX
 -- =========================
 local Window = Library:CreateWindow({
-    Name = "LYORA SAMBUNG KATA",
+    Name = "✨ LYORA SAMBUNG KATA",
     Subtitle = "Premium Auto Farm | " .. userData.discordUser,
-    Size = UDim2.new(0, 650, 0, 450),
-    Position = UDim2.new(0.5, -325, 0.5, -225),
-    Theme = "Default",
+    Size = UDim2.new(0, 650, 0, 500),
+    Position = UDim2.new(0.5, -325, 0.5, -250),
+    Theme = "Dark",
     Draggable = true,
     MinimizeEnabled = true
 })
 
+-- =========================
 -- HOME TAB
+-- =========================
 local HomeTab = Window:CreateTab("🏠 Home")
 
-HomeTab:CreateParagraph({
-    Title = "Welcome",
-    Content = "User: " .. userData.discordUser .. "\nStatus: ✅ Whitelisted"
+-- Profile Section
+local ProfileSection = HomeTab:CreateSection("Profile")
+
+local ProfileCard = ProfileSection:AddElement("Frame", {
+    Size = UDim2.new(1, -20, 0, 80),
+    BackgroundColor = Color3.fromRGB(30, 35, 45),
+    BorderRadius = 8
 })
 
+-- Avatar (manual karena AddElement mungkin belum support ImageLabel)
+local Avatar = Instance.new("ImageLabel")
+Avatar.Parent = ProfileCard
+Avatar.Size = UDim2.new(0, 60, 0, 60)
+Avatar.Position = UDim2.new(0, 10, 0.5, -30)
+Avatar.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420"
+Avatar.BorderSizePixel = 0
+
+local AvatarCorner = Instance.new("UICorner")
+AvatarCorner.CornerRadius = UDim.new(0, 30)
+AvatarCorner.Parent = Avatar
+
+local NameLabel = Instance.new("TextLabel")
+NameLabel.Parent = ProfileCard
+NameLabel.Size = UDim2.new(0, 200, 0, 25)
+NameLabel.Position = UDim2.new(0, 80, 0, 15)
+NameLabel.BackgroundTransparency = 1
+NameLabel.Text = LocalPlayer.Name
+NameLabel.Font = Enum.Font.GothamBold
+NameLabel.TextSize = 18
+NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local DiscordLabel = Instance.new("TextLabel")
+DiscordLabel.Parent = ProfileCard
+DiscordLabel.Size = UDim2.new(0, 200, 0, 20)
+DiscordLabel.Position = UDim2.new(0, 80, 0, 45)
+DiscordLabel.BackgroundTransparency = 1
+DiscordLabel.Text = "💬 " .. userData.discordUser
+DiscordLabel.Font = Enum.Font.Gotham
+DiscordLabel.TextSize = 12
+DiscordLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Stats Section
+local StatsSection = HomeTab:CreateSection("Statistics")
+
+local stats = {
+    {label = "Games", value = "0", icon = "🎮"},
+    {label = "Streak", value = "0", icon = "🔥"},
+    {label = "Words", value = "0", icon = "📝"},
+    {label = "Acc", value = "0%", icon = "🎯"}
+}
+
+for i, stat in ipairs(stats) do
+    local card = StatsSection:AddElement("Frame", {
+        Size = UDim2.new(0, 140, 0, 80),
+        Position = UDim2.new(0, (i-1) * 150, 0, 0),
+        BackgroundColor = Color3.fromRGB(25, 30, 40),
+        BorderRadius = 8
+    })
+    
+    local icon = card:AddElement("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 10),
+        Text = stat.icon,
+        Font = "Gotham",
+        TextSize = 20,
+        TextColor = Color3.fromRGB(255, 105, 180)
+    })
+    
+    local value = card:AddElement("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 25),
+        Position = UDim2.new(0, 0, 0, 40),
+        Text = stat.value,
+        Font = "GothamBold",
+        TextSize = 18,
+        TextColor = Color3.fromRGB(255, 255, 255)
+    })
+    
+    local label = card:AddElement("TextLabel", {
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 0, 65),
+        Text = stat.label,
+        Font = "Gotham",
+        TextSize = 11,
+        TextColor = Color3.fromRGB(150, 150, 150)
+    })
+end
+
+-- =========================
 -- AUTO TAB
+-- =========================
 local AutoTab = Window:CreateTab("⚙️ Auto Farm")
 
--- Status Panel
-local StatusPanel = AutoTab:CreateSection("Game Status")
+-- Status Section
+local StatusSection = AutoTab:CreateSection("Live Status")
 
-local MatchStatus = StatusPanel:AddElement("TextLabel", {
-    Position = UDim2.new(0, 10, 0, 10),
-    Text = "🔴 Match: Waiting",
-    TextColor = Color3.fromRGB(255, 100, 100)
+-- Status Panel (manual karena AddElement mungkin terbatas)
+local StatusFrame = StatusSection:AddElement("Frame", {
+    Size = UDim2.new(1, -20, 0, 100),
+    BackgroundColor = Color3.fromRGB(25, 30, 40),
+    BorderRadius = 8
 })
 
-local TurnStatus = StatusPanel:AddElement("TextLabel", {
-    Position = UDim2.new(0, 10, 0, 40),
-    Text = "⏳ Turn: -",
-    TextColor = Color3.fromRGB(255, 255, 0)
-})
+local function createStatusLabel(parent, y, label, default)
+    local lbl = Instance.new("TextLabel")
+    lbl.Parent = parent
+    lbl.Size = UDim2.new(0, 80, 0, 20)
+    lbl.Position = UDim2.new(0, 10, 0, y)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = label
+    lbl.Font = Enum.Font.Gotham
+    lbl.TextSize = 12
+    lbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local val = Instance.new("TextLabel")
+    val.Parent = parent
+    val.Size = UDim2.new(0, 150, 0, 20)
+    val.Position = UDim2.new(0, 100, 0, y)
+    val.BackgroundTransparency = 1
+    val.Text = default
+    val.Font = Enum.Font.GothamBold
+    val.TextSize = 12
+    val.TextColor3 = Color3.fromRGB(255, 255, 255)
+    val.TextXAlignment = Enum.TextXAlignment.Left
+    
+    return val
+end
 
-local CurrentWord = StatusPanel:AddElement("TextLabel", {
-    Position = UDim2.new(0, 10, 0, 70),
-    Text = "📝 Word: -",
-    TextColor = Color3.fromRGB(180, 180, 180)
-})
+local MatchStatus = createStatusLabel(StatusFrame, 10, "Match:", "🔴 Waiting")
+local TurnStatus = createStatusLabel(StatusFrame, 40, "Turn:", "⏳ -")
+local WordStatus = createStatusLabel(StatusFrame, 70, "Kata:", "📝 -")
 
--- Auto Settings
-local AutoSection = AutoTab:CreateSection("Auto Settings")
+-- Settings Section
+local SettingsSection = AutoTab:CreateSection("Pengaturan Auto")
 
-AutoSection:AddToggle({
-    Name = "Enable Auto Farm",
+SettingsSection:AddToggle({
+    Name = "Aktifkan Auto Farm",
     Default = false,
     Callback = function(state)
         autoEnabled = state
@@ -252,72 +360,131 @@ AutoSection:AddToggle({
     end
 })
 
-AutoSection:AddSlider({
-    Name = "Aggression",
-    Min = 0, Max = 100,
+SettingsSection:AddSlider({
+    Name = "Agresivitas",
+    Min = 0,
+    Max = 100,
     Default = config.aggression,
-    Callback = function(v) config.aggression = v end
-})
-
-AutoSection:AddSlider({
-    Name = "Min Delay (ms)",
-    Min = 50, Max = 500,
-    Default = config.minDelay,
-    Callback = function(v) config.minDelay = v end
-})
-
-AutoSection:AddSlider({
-    Name = "Max Delay (ms)",
-    Min = 200, Max = 1500,
-    Default = config.maxDelay,
-    Callback = function(v) config.maxDelay = v end
-})
-
-AutoSection:AddSlider({
-    Name = "Min Word Length",
-    Min = 1, Max = 3,
-    Default = config.minLength,
-    Callback = function(v) config.minLength = v end
-})
-
-AutoSection:AddSlider({
-    Name = "Max Word Length",
-    Min = 5, Max = 20,
-    Default = config.maxLength,
-    Callback = function(v) config.maxLength = v end
-})
-
--- WORDS TAB
-local WordsTab = Window:CreateTab("📋 Words")
-
-local UsedList = WordsTab:AddElement("TextLabel", {
-    Size = UDim2.new(1, -20, 0, 100),
-    BackgroundColor = Color3.fromRGB(20, 25, 35),
-    Text = "No words used yet",
-    Font = "Gotham",
-    TextSize = 13,
-    TextColor = Color3.fromRGB(180, 180, 180)
-})
-
-WordsTab:CreateButton({
-    Name = "Reset Used Words",
-    Callback = function()
-        resetUsedWords()
-        UsedList.Text = "No words used yet"
+    Callback = function(v)
+        config.aggression = v
     end
 })
 
+SettingsSection:AddSlider({
+    Name = "Min Delay (ms)",
+    Min = 50,
+    Max = 500,
+    Default = config.minDelay,
+    Callback = function(v)
+        config.minDelay = v
+    end
+})
+
+SettingsSection:AddSlider({
+    Name = "Max Delay (ms)",
+    Min = 200,
+    Max = 1500,
+    Default = config.maxDelay,
+    Callback = function(v)
+        config.maxDelay = v
+    end
+})
+
+SettingsSection:AddSlider({
+    Name = "Min Panjang Kata",
+    Min = 1,
+    Max = 3,
+    Default = config.minLength,
+    Callback = function(v)
+        config.minLength = v
+    end
+})
+
+SettingsSection:AddSlider({
+    Name = "Max Panjang Kata",
+    Min = 5,
+    Max = 20,
+    Default = config.maxLength,
+    Callback = function(v)
+        config.maxLength = v
+    end
+})
+
+-- =========================
+-- WORDS TAB
+-- =========================
+local WordsTab = Window:CreateTab("📋 Words")
+
+local WordsFrame = WordsTab:AddElement("Frame", {
+    Size = UDim2.new(1, -20, 0, 150),
+    BackgroundColor = Color3.fromRGB(25, 30, 40),
+    BorderRadius = 8
+})
+
+local WordsList = Instance.new("TextLabel")
+WordsList.Parent = WordsFrame
+WordsList.Size = UDim2.new(1, -20, 1, -20)
+WordsList.Position = UDim2.new(0, 10, 0, 10)
+WordsList.BackgroundTransparency = 1
+WordsList.Text = "Belum ada kata terpakai"
+WordsList.Font = Enum.Font.Gotham
+WordsList.TextSize = 13
+WordsList.TextColor3 = Color3.fromRGB(180, 180, 180)
+WordsList.TextWrapped = true
+WordsList.TextXAlignment = Enum.TextXAlignment.Left
+WordsList.TextYAlignment = Enum.TextYAlignment.Top
+
+WordsTab:AddButton({
+    Name = "Reset Used Words",
+    Callback = function()
+        resetUsedWords()
+        WordsList.Text = "Belum ada kata terpakai"
+    end
+})
+
+-- =========================
 -- INFO TAB
+-- =========================
 local InfoTab = Window:CreateTab("ℹ️ Info")
 
-InfoTab:CreateParagraph({
-    Title = "Script Information",
-    Content = string.format(
-        "Lyora Sambung Kata\nVersion: 3.0\nAuthor: sazaraaax\nUser: %s\nDiscord: %s",
-        LocalPlayer.Name,
-        userData.discordUser
-    )
+local InfoFrame = InfoTab:AddElement("Frame", {
+    Size = UDim2.new(1, -20, 0, 200),
+    BackgroundColor = Color3.fromRGB(25, 30, 40),
+    BorderRadius = 8
 })
+
+local InfoText = Instance.new("TextLabel")
+InfoText.Parent = InfoFrame
+InfoText.Size = UDim2.new(1, -20, 1, -20)
+InfoText.Position = UDim2.new(0, 10, 0, 10)
+InfoText.BackgroundTransparency = 1
+InfoText.Text = string.format(
+[[✨ LYORA SAMBUNG KATA
+━━━━━━━━━━━━━━━━━━━━
+Version    : 3.0
+Author     : Lyora Community
+Wordlist   : %d kata
+
+👤 User     : %s
+💬 Discord  : %s
+📊 Status   : ✅ Whitelisted
+
+⚡ Fitur:
+• Auto Farm dengan AI
+• Real-time status
+• Filter panjang kata
+• Anti kata berulang
+
+📌 Cara Pakai:
+1. Aktifkan Auto Farm
+2. Atur agresivitas
+3. Biarkan bot bekerja
+]], #kataModule, LocalPlayer.Name, userData.discordUser)
+InfoText.Font = Enum.Font.Gotham
+InfoText.TextSize = 13
+InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
+InfoText.TextXAlignment = Enum.TextXAlignment.Left
+InfoText.TextYAlignment = Enum.TextYAlignment.Top
 
 -- =========================
 -- REMOTE EVENT HANDLERS
@@ -327,29 +494,27 @@ MatchUI.OnClientEvent:Connect(function(cmd, value)
         matchActive = true
         isMyTurn = false
         resetUsedWords()
-        MatchStatus.Text = "🟢 Match: Active"
-        MatchStatus.TextColor = Color3.fromRGB(0, 255, 0)
+        MatchStatus.Text = "🟢 In Game"
     elseif cmd == "HideMatchUI" then
         matchActive = false
         isMyTurn = false
         serverLetter = ""
         resetUsedWords()
-        MatchStatus.Text = "🔴 Match: Waiting"
-        MatchStatus.TextColor = Color3.fromRGB(255, 100, 100)
-        TurnStatus.Text = "⏳ Turn: -"
-        CurrentWord.Text = "📝 Word: -"
+        MatchStatus.Text = "🔴 Waiting"
+        TurnStatus.Text = "⏳ -"
+        WordStatus.Text = "📝 -"
     elseif cmd == "StartTurn" then
         isMyTurn = true
-        TurnStatus.Text = "🎯 Turn: Your Turn"
-        TurnStatus.TextColor = Color3.fromRGB(0, 255, 0)
-        if autoEnabled then startUltraAI() end
+        TurnStatus.Text = "🎯 Giliran Anda"
+        if autoEnabled then
+            startUltraAI()
+        end
     elseif cmd == "EndTurn" then
         isMyTurn = false
-        TurnStatus.Text = "⏳ Turn: Opponent"
-        TurnStatus.TextColor = Color3.fromRGB(255, 255, 0)
+        TurnStatus.Text = "⏳ Opponent"
     elseif cmd == "UpdateServerLetter" then
         serverLetter = value or ""
-        CurrentWord.Text = "📝 Word: " .. serverLetter
+        WordStatus.Text = "📝 " .. serverLetter
     end
 end)
 
@@ -362,11 +527,13 @@ end)
 UsedWordWarn.OnClientEvent:Connect(function(word)
     if word then
         addUsedWord(word)
-        local displayText = "Used Words:\n"
+        local displayText = "📋 Kata terpakai:\n"
         for i, w in ipairs(usedWordsList) do
-            displayText = displayText .. w .. (i < #usedWordsList and ", " or "")
+            displayText = displayText .. w
+            if i < #usedWordsList then displayText = displayText .. ", " end
+            if i % 5 == 0 then displayText = displayText .. "\n" end
         end
-        UsedList.Text = displayText
+        WordsList.Text = displayText
         if autoEnabled and matchActive and isMyTurn then
             humanDelay()
             startUltraAI()
@@ -384,4 +551,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ LYORA CHEAT SCRIPT LOADED")
+-- =========================
+-- WELCOME
+-- =========================
+print("✅ LYORA AXION UI LOADED - Welcome " .. userData.discordUser)
