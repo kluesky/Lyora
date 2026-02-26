@@ -1,28 +1,38 @@
 -- =========================================================
--- LYORA SAMBUNG KATA - RAYFIELD EDITION
+-- LYORA SAMBUNG KATA - ULTIMATE EDITION
 -- =========================================================
 
 if game:IsLoaded() == false then
     game.Loaded:Wait()
 end
 
--- Load Rayfield
+-- =========================
+-- LOAD RAYFIELD
+-- =========================
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Services
-local Players = game:GetService("Players")
+-- =========================
+-- SERVICES
+-- =========================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Ambil data dari verification
+-- =========================
+-- USER DATA (DARI VERIFY)
+-- =========================
 local userData = _G.LyoraUserData or {
     discordUser = "Unknown",
-    username = LocalPlayer.Name
+    username = LocalPlayer.Name,
+    userId = tostring(LocalPlayer.UserId)
 }
 
--- Load wordlist
+-- =========================
+-- LOAD WORDLIST
+-- =========================
 local kataModule = {}
+
 local function downloadWordlist()
     local response = game:HttpGet("https://raw.githubusercontent.com/danzzy1we/roblox-script-dump/refs/heads/main/WordListDump/Dump_IndonesianWords.lua")
     if not response then return false end
@@ -42,8 +52,8 @@ local function downloadWordlist()
     return true
 end
 
-local wordlistOk = downloadWordlist()
-if not wordlistOk or #kataModule == 0 then
+local wordOk = downloadWordlist()
+if not wordOk or #kataModule == 0 then
     Rayfield:Notify({
         Title = "Error",
         Content = "Gagal load wordlist!",
@@ -52,7 +62,9 @@ if not wordlistOk or #kataModule == 0 then
     return
 end
 
--- Remotes
+-- =========================
+-- REMOTES
+-- =========================
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local MatchUI = remotes:WaitForChild("MatchUI")
 local SubmitWord = remotes:WaitForChild("SubmitWord")
@@ -61,7 +73,9 @@ local BillboardEnd = remotes:WaitForChild("BillboardEnd")
 local TypeSound = remotes:WaitForChild("TypeSound")
 local UsedWordWarn = remotes:WaitForChild("UsedWordWarn")
 
--- State
+-- =========================
+-- STATE
+-- =========================
 local matchActive = false
 local isMyTurn = false
 local serverLetter = ""
@@ -79,7 +93,9 @@ local config = {
     maxLength = 12
 }
 
--- Logic functions
+-- =========================
+-- LOGIC FUNCTIONS
+-- =========================
 local function isUsed(word)
     return usedWords[string.lower(word)] == true
 end
@@ -127,7 +143,9 @@ local function humanDelay()
     task.wait(math.random(min, max) / 1000)
 end
 
--- Auto Engine
+-- =========================
+-- AUTO ENGINE
+-- =========================
 local function startUltraAI()
     if autoRunning then return end
     if not autoEnabled then return end
@@ -176,9 +194,11 @@ local function startUltraAI()
     autoRunning = false
 end
 
--- Create Rayfield Window
+-- =========================
+-- CREATE WINDOW (DESAIN FRESH)
+-- =========================
 local Window = Rayfield:CreateWindow({
-    Name = "LYORA SAMBUNG KATA",
+    Name = "✨ LYORA SAMBUNG KATA",
     LoadingTitle = "Auto Farm System",
     LoadingSubtitle = "Welcome " .. userData.discordUser,
     ConfigurationSaving = { Enabled = true },
@@ -189,29 +209,36 @@ local Window = Rayfield:CreateWindow({
     }
 })
 
--- Main Tab
-local MainTab = Window:CreateTab("🏠 Main", "home")
+-- =========================
+-- TAB HOME
+-- =========================
+local HomeTab = Window:CreateTab("🏠 Home", "home")
 
-MainTab:CreateParagraph("👤 Account", 
-    string.format("Discord: %s\nRoblox: %s\nStatus: ✅ Whitelisted",
+-- Profile Card
+HomeTab:CreateParagraph("👤 Account Info",
+    string.format("Discord: %s\nRoblox: %s\nUser ID: %s\nStatus: ✅ Whitelisted",
         userData.discordUser,
-        LocalPlayer.Name
+        LocalPlayer.Name,
+        userData.userId
     )
 )
 
--- Status
-local StatusSection = MainTab:CreateSection("Game Status")
+-- Status Section
+local StatusSection = HomeTab:CreateSection("📊 Live Status")
 
-local MatchStatus = MainTab:CreateParagraph("Match", "🔴 Waiting")
-local TurnStatus = MainTab:CreateParagraph("Turn", "⏳ -")
-local WordStatus = MainTab:CreateParagraph("Current Word", "📝 -")
-local UsedCount = MainTab:CreateParagraph("Used Words", "📋 0")
+local MatchStatus = HomeTab:CreateParagraph("Match Status", "🔴 Waiting")
+local TurnStatus = HomeTab:CreateParagraph("Turn", "⏳ -")
+local WordStatus = HomeTab:CreateParagraph("Current Letter", "📝 -")
+local UsedCount = HomeTab:CreateParagraph("Used Words", "📋 0")
+local WordlistCount = HomeTab:CreateParagraph("Wordlist", "📚 " .. #kataModule .. " kata")
 
--- Auto Tab
-local AutoTab = Window:CreateTab("⚙️ Auto", "settings")
+-- =========================
+-- TAB AUTO FARM
+-- =========================
+local AutoTab = Window:CreateTab("⚙️ Auto Farm", "settings")
 
 AutoTab:CreateToggle({
-    Name = "Enable Auto Farm",
+    Name = "🤖 Aktifkan Auto Farm",
     CurrentValue = false,
     Callback = function(v)
         autoEnabled = v
@@ -222,7 +249,7 @@ AutoTab:CreateToggle({
 })
 
 AutoTab:CreateSlider({
-    Name = "Aggression",
+    Name = "🎯 Agresivitas",
     Range = {0, 100},
     Increment = 5,
     CurrentValue = config.aggression,
@@ -232,7 +259,7 @@ AutoTab:CreateSlider({
 })
 
 AutoTab:CreateSlider({
-    Name = "Min Delay (ms)",
+    Name = "⏱️ Min Delay (ms)",
     Range = {50, 500},
     Increment = 10,
     CurrentValue = config.minDelay,
@@ -242,7 +269,7 @@ AutoTab:CreateSlider({
 })
 
 AutoTab:CreateSlider({
-    Name = "Max Delay (ms)",
+    Name = "⏱️ Max Delay (ms)",
     Range = {200, 1500},
     Increment = 10,
     CurrentValue = config.maxDelay,
@@ -252,7 +279,7 @@ AutoTab:CreateSlider({
 })
 
 AutoTab:CreateSlider({
-    Name = "Min Word Length",
+    Name = "📏 Min Panjang Kata",
     Range = {1, 3},
     Increment = 1,
     CurrentValue = config.minLength,
@@ -262,7 +289,7 @@ AutoTab:CreateSlider({
 })
 
 AutoTab:CreateSlider({
-    Name = "Max Word Length",
+    Name = "📏 Max Panjang Kata",
     Range = {5, 20},
     Increment = 1,
     CurrentValue = config.maxLength,
@@ -271,18 +298,20 @@ AutoTab:CreateSlider({
     end
 })
 
--- Words Tab
+-- =========================
+-- TAB WORDS
+-- =========================
 local WordsTab = Window:CreateTab("📋 Words", "list")
 
 local UsedDropdown = WordsTab:CreateDropdown({
-    Name = "Used Words List",
+    Name = "📋 Daftar Kata Terpakai",
     Options = usedWordsList,
     CurrentOption = "",
     Callback = function() end
 })
 
 WordsTab:CreateButton({
-    Name = "Reset Used Words",
+    Name = "🔄 Reset Used Words",
     Callback = function()
         resetUsedWords()
         UsedDropdown:Set({})
@@ -295,29 +324,131 @@ WordsTab:CreateButton({
     end
 })
 
--- Info Tab
+-- =========================
+-- TAB INFO (BARU!)
+-- =========================
 local InfoTab = Window:CreateTab("ℹ️ Info", "info")
 
-InfoTab:CreateParagraph("Script Info",
-    string.format(
-        "Lyora Sambung Kata\nVersion: 3.0\nAuthor: sazaraaax\n\nUser: %s\nDiscord: %s\nWordlist: %d words",
-        LocalPlayer.Name,
+-- Informasi Script
+InfoTab:CreateParagraph("📌 Script Information",
+    string.format([[
+✨ LYORA SAMBUNG KATA
+━━━━━━━━━━━━━━━━━━
+Version    : 1.0.0
+Author     : Lyora Community
+Library    : Rayfield
+Wordlist   : %d kata
+
+👤 User Info
+━━━━━━━━━━━━━━━━━━
+Discord    : %s
+Roblox     : %s
+User ID    : %s
+Status     : ✅ Whitelisted
+]],
+        #kataModule,
         userData.discordUser,
-        #kataModule
+        LocalPlayer.Name,
+        userData.userId
     )
 )
 
-InfoTab:CreateParagraph("How to Use",
-    "1. Get whitelist via /whitelist\n2. Verify with mini GUI\n3. Enable Auto Farm\n4. Let it play!"
+-- Cara Penggunaan
+InfoTab:CreateParagraph("📖 Cara Penggunaan",
+    [[
+1️⃣ Dapatkan whitelist via Discord
+   • Join Discord server
+   • Ketik /whitelist <username>
+
+2️⃣ Verifikasi di GUI mini
+   • Klik VERIFY
+   • Otomatis load script ini
+
+3️⃣ Aktifkan Auto Farm
+   • Toggle ON di tab Auto
+   • Atur agresivitas & delay
+   • Biarkan script bekerja!
+
+4️⃣ Pantau Status
+   • Live status di tab Home
+   • Daftar kata terpakai
+   ]]
 )
 
--- Remote event handlers
+-- Fitur
+InfoTab:CreateParagraph("⚡ Fitur Unggulan",
+    [[
+✅ Auto Farm dengan AI
+   • Cari kata terbaik
+   • Delay seperti manusia
+   • Agresivitas adjustable
+
+✅ Wordlist Indonesia
+   • 1000+ kata
+   • Filter panjang kata
+   • Anti kata berulang
+
+✅ Real-time Status
+   • Monitor pertandingan
+   • Lihat giliran
+   • Track kata terpakai
+
+✅ Sistem Whitelist
+   • 7 jam masa aktif
+   • Terintegrasi Discord
+   • Aman & terpercaya
+   ]]
+)
+
+-- Informasi Update
+InfoTab:CreateParagraph("🆕 What's New v3.0",
+    [[
+✨ Desain UI baru
+✨ Menu informasi lengkap
+✨ Status live lebih detail
+✨ Optimasi untuk Android
+✨ Fix bug & error
+   ]]
+)
+
+-- Credits
+InfoTab:CreateParagraph("🙏 Credits",
+    [[
+Terima kasih kepada:
+• Lyora Community
+• Semua user Lyora
+
+━━━━━━━━━━━━━━━━━━
+© 2025 Lyora System
+All rights reserved
+   ]]
+)
+
+-- =========================
+-- TAB SETTINGS
+-- =========================
+local SettingsTab = Window:CreateTab("⚙️ Settings", "settings")
+
+SettingsTab:CreateParagraph("🔧 Pengaturan",
+    "Toggle GUI: RightShift\nDrag: Tahan header"
+)
+
+SettingsTab:CreateButton({
+    Name = "🗑️ Unload Script",
+    Callback = function()
+        Window:Destroy()
+    end
+})
+
+-- =========================
+-- REMOTE EVENT HANDLERS
+-- =========================
 MatchUI.OnClientEvent:Connect(function(cmd, value)
     if cmd == "ShowMatchUI" then
         matchActive = true
         isMyTurn = false
         resetUsedWords()
-        MatchStatus:Set("🟢 Active")
+        MatchStatus:Set("🟢 In Game")
     elseif cmd == "HideMatchUI" then
         matchActive = false
         isMyTurn = false
@@ -361,7 +492,9 @@ UsedWordWarn.OnClientEvent:Connect(function(word)
     end
 end)
 
--- Keybind toggle
+-- =========================
+-- KEYBIND
+-- =========================
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
@@ -369,11 +502,13 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
--- Welcome notif
+-- =========================
+-- WELCOME
+-- =========================
 Rayfield:Notify({
-    Title = "Welcome " .. userData.discordUser,
-    Content = "Auto Farm Ready!",
+    Title = "✨ Lyora Sambung Kata",
+    Content = "Selamat datang " .. userData.discordUser .. "!",
     Duration = 3
 })
 
-print("✅ LYORA RAYFIELD CHEAT LOADED")
+print("✅ LYORA SCRIPT LOADED - Welcome " .. userData.discordUser)

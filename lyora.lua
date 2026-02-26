@@ -1,4 +1,6 @@
--- LYORA VERIFICATION - MINI EDITION
+-- =========================================================
+-- LYORA VERIFICATION - MINI EDITION (AUTO EXECUTE GAGO)
+-- =========================================================
 
 -- Tunggu game load
 repeat wait() until game:IsLoaded()
@@ -13,7 +15,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 -- Config
 local WHITELIST_URL = "https://pastefy.app/EvFSBcDy/raw"
 local DISCORD_INVITE = "cvaHe2rXnk"
-local CHEAT_URL = "https://pastebin.com/raw/XXXXXXXX" -- GANTI!
+local GAGO_SCRIPT_URL = "https://raw.githubusercontent.com/kluesky/Lyora/refs/heads/main/gago.lua"
 
 -- Data
 local userData = {
@@ -222,7 +224,9 @@ local function notif(teks, sukses)
     n:Destroy()
 end
 
--- Event verify
+-- =========================================================
+-- VERIFY FUNCTION - AUTO EXECUTE GAGO SCRIPT
+-- =========================================================
 verifyBtn.MouseButton1Click:Connect(function()
     statusText.Text = "⏳ Verifying..."
     verifyBtn.Text = "..."
@@ -235,16 +239,22 @@ verifyBtn.MouseButton1Click:Connect(function()
         statusText.Text = "✅ Verified"
         verifyBtn.Text = "DONE"
         verifyBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
-        notif("✅ Verified!", true)
+        notif("✅ Verified! Loading script...", true)
         
-        _G.LyoraUserData = userData
-        task.wait(1)
+        -- 🔥 AUTO EXECUTE GAGO SCRIPT
+        task.wait(0.5)
         gui:Destroy()
         
-        local cheat = game:HttpGet(CHEAT_URL)
-        if cheat then
-            loadstring(cheat)()
+        local success, script = pcall(function()
+            return game:HttpGet(GAGO_SCRIPT_URL)
+        end)
+        
+        if success and script then
+            loadstring(script)()
+        else
+            warn("❌ Gagal load script gago.lua")
         end
+        
     else
         statusText.Text = "❌ " .. res
         verifyBtn.Text = "VERIFY"
@@ -253,13 +263,13 @@ verifyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Event discord
+-- Tombol discord
 dcBtn.MouseButton1Click:Connect(function()
     setclipboard("https://discord.gg/" .. DISCORD_INVITE)
-    notif("🔗 Copied!", true)
+    notif("🔗 Link Discord dicopy!", true)
 end)
 
--- Keybind
+-- Keybind toggle
 UserInputService.InputBegan:Connect(function(inp, gp)
     if gp then return end
     if inp.KeyCode == Enum.KeyCode.RightShift then
@@ -267,4 +277,5 @@ UserInputService.InputBegan:Connect(function(inp, gp)
     end
 end)
 
-print("✅ Lyora Verify Mini")
+print("✅ Lyora Verify Mini - Auto Load gago.lua")
+print("🔗 Script: " .. GAGO_SCRIPT_URL)
