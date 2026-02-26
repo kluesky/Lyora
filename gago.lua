@@ -1,12 +1,14 @@
 -- =========================================================
--- LYORA CUSTOM GUI - SAMBUNG KATA (PASTI MUNCUL)
+-- LYORA CUSTOM GUI - SAMBUNG KATA (SIMPLE & KEREN)
 -- =========================================================
 
 if game:IsLoaded() == false then
     game.Loaded:Wait()
 end
 
--- Services
+-- =========================
+-- SERVICES
+-- =========================
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -14,14 +16,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Data user dari verify
+-- Data dari verification
 local userData = _G.LyoraUserData or {
-    discordUser = "User",
+    discordUser = "Unknown",
     username = LocalPlayer.Name
 }
 
 -- =========================
--- LOAD WORDLIST
+-- WORDLIST
 -- =========================
 local kataModule = {}
 local function downloadWordlist()
@@ -136,20 +138,21 @@ local function startUltraAI()
 end
 
 -- =========================
--- CUSTOM GUI SEDERHANA
+-- CREATE GUI (SIMPLE CUSTOM)
 -- =========================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = PlayerGui
 ScreenGui.Name = "LyoraGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Enabled = true
 
--- Frame utama
+-- MAIN FRAME
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 320, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+MainFrame.Size = UDim2.new(0, 350, 0, 450)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
@@ -168,22 +171,22 @@ Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
 
 -- Corner
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 10)
+Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = MainFrame
 
--- Header
+-- HEADER
 local Header = Instance.new("Frame")
 Header.Parent = MainFrame
 Header.Size = UDim2.new(1, 0, 0, 45)
 Header.BackgroundColor3 = Color3.fromRGB(255, 80, 140)
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 10)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
 local Title = Instance.new("TextLabel")
 Title.Parent = Header
-Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Size = UDim2.new(1, -80, 1, 0)  -- Dikurangi untuk kasih space ke tombol
 Title.Position = UDim2.new(0, 12, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "LYORA"
@@ -192,6 +195,33 @@ Title.TextSize = 18
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Parent = Header
+Subtitle.Size = UDim2.new(1, -80, 0, 15)
+Subtitle.Position = UDim2.new(0, 12, 0, 25)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = userData.discordUser
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.TextSize = 10
+Subtitle.TextColor3 = Color3.fromRGB(220, 220, 220)
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Tombol Minimize (NEW!)
+local MinBtn = Instance.new("TextButton")
+MinBtn.Parent = Header
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Position = UDim2.new(1, -70, 0.5, -15)
+MinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+MinBtn.Text = "—"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 20
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 8)
+MinCorner.Parent = MinBtn
+
+-- Tombol Close
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Parent = Header
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -203,11 +233,35 @@ CloseBtn.TextSize = 16
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.CornerRadius = UDim.new(0, 8)
 CloseCorner.Parent = CloseBtn
 CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
--- Content
+-- =========================
+-- MINIMIZE FUNCTION
+-- =========================
+local minimized = false
+local originalSize = MainFrame.Size
+
+MinBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        -- Minimize: kecilin frame, sembunyiin content
+        MainFrame:TweenSize(UDim2.new(0, 350, 0, 45), "Out", "Quad", 0.2, true)
+        Content.Visible = false
+        MinBtn.Text = "□"
+        MinBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+    else
+        -- Maximize: balikin ukuran, munculin content
+        MainFrame:TweenSize(originalSize, "Out", "Quad", 0.2, true)
+        task.wait(0.2)
+        Content.Visible = true
+        MinBtn.Text = "—"
+        MinBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+    end
+end)
+
+-- CONTENT
 local Content = Instance.new("Frame")
 Content.Parent = MainFrame
 Content.Size = UDim2.new(1, -20, 1, -55)
@@ -222,29 +276,29 @@ TabFrame.Parent = Content
 TabFrame.Size = UDim2.new(1, 0, 0, 35)
 TabFrame.BackgroundTransparency = 1
 
-local tabs = {"🏠", "⚙️", "📋", "ℹ️"}
-local tabButtons = {}
-local tabContents = {}
+local Tabs = {"🏠", "⚙️", "📋", "ℹ️"}
+local TabButtons = {}
+local TabContents = {}
 
-for i, tabName in ipairs(tabs) do
+for i, tabName in ipairs(Tabs) do
     local btn = Instance.new("TextButton")
     btn.Parent = TabFrame
     btn.Size = UDim2.new(0.25, -2, 1, 0)
     btn.Position = UDim2.new(0.25 * (i-1), 1, 0, 0)
-    btn.BackgroundColor3 = i == 1 and Color3.fromRGB(255, 80, 140) or Color3.fromRGB(40, 42, 50)
+    btn.BackgroundColor3 = i == 1 and Color3.fromRGB(255, 80, 140) or Color3.fromRGB(35, 35, 45)
     btn.Text = tabName
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
+    btn.TextSize = 18
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     
     local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 6)
+    btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
     
-    table.insert(tabButtons, btn)
+    TabButtons[i] = btn
 end
 
--- Container untuk konten tab
+-- Container for tab content
 local TabContainer = Instance.new("Frame")
 TabContainer.Parent = Content
 TabContainer.Size = UDim2.new(1, 0, 1, -45)
@@ -252,72 +306,73 @@ TabContainer.Position = UDim2.new(0, 0, 0, 40)
 TabContainer.BackgroundTransparency = 1
 
 -- =========================
--- TAB 1: HOME
+-- HOME TAB
 -- =========================
 local HomeTab = Instance.new("Frame")
 HomeTab.Parent = TabContainer
 HomeTab.Size = UDim2.new(1, 0, 1, 0)
 HomeTab.BackgroundTransparency = 1
-tabContents["🏠"] = HomeTab
+TabContents["🏠"] = HomeTab
 
--- Profile
-local ProfileBox = Instance.new("Frame")
-ProfileBox.Parent = HomeTab
-ProfileBox.Size = UDim2.new(1, 0, 0, 60)
-ProfileBox.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+-- Profile Card
+local ProfileCard = Instance.new("Frame")
+ProfileCard.Parent = HomeTab
+ProfileCard.Size = UDim2.new(1, 0, 0, 70)
+ProfileCard.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
 
-local BoxCorner = Instance.new("UICorner")
-BoxCorner.CornerRadius = UDim.new(0, 6)
-BoxCorner.Parent = ProfileBox
+local ProfileCorner = Instance.new("UICorner")
+ProfileCorner.CornerRadius = UDim.new(0, 8)
+ProfileCorner.Parent = ProfileCard
 
 local Avatar = Instance.new("ImageLabel")
-Avatar.Parent = ProfileBox
-Avatar.Size = UDim2.new(0, 40, 0, 40)
-Avatar.Position = UDim2.new(0, 10, 0.5, -20)
-Avatar.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
+Avatar.Parent = ProfileCard
+Avatar.Size = UDim2.new(0, 50, 0, 50)
+Avatar.Position = UDim2.new(0, 10, 0.5, -25)
+Avatar.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
 Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420"
 
 local AvatarCorner = Instance.new("UICorner")
-AvatarCorner.CornerRadius = UDim.new(0, 20)
+AvatarCorner.CornerRadius = UDim.new(0, 25)
 AvatarCorner.Parent = Avatar
 
 local NameLabel = Instance.new("TextLabel")
-NameLabel.Parent = ProfileBox
-NameLabel.Size = UDim2.new(0, 200, 0, 20)
-NameLabel.Position = UDim2.new(0, 60, 0, 15)
+NameLabel.Parent = ProfileCard
+NameLabel.Size = UDim2.new(0, 200, 0, 22)
+NameLabel.Position = UDim2.new(0, 70, 0, 15)
 NameLabel.BackgroundTransparency = 1
 NameLabel.Text = LocalPlayer.Name
 NameLabel.Font = Enum.Font.GothamBold
-NameLabel.TextSize = 14
+NameLabel.TextSize = 15
 NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 NameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-local DiscordLabel = Instance.new("TextLabel")
-DiscordLabel.Parent = ProfileBox
-DiscordLabel.Size = UDim2.new(0, 200, 0, 20)
-DiscordLabel.Position = UDim2.new(0, 60, 0, 35)
-DiscordLabel.BackgroundTransparency = 1
-DiscordLabel.Text = userData.discordUser
-DiscordLabel.Font = Enum.Font.Gotham
-DiscordLabel.TextSize = 12
-DiscordLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-DiscordLabel.TextXAlignment = Enum.TextXAlignment.Left
+local DiscordName = Instance.new("TextLabel")
+DiscordName.Parent = ProfileCard
+DiscordName.Size = UDim2.new(0, 200, 0, 18)
+DiscordName.Position = UDim2.new(0, 70, 0, 40)
+DiscordName.BackgroundTransparency = 1
+DiscordName.Text = "💬 " .. userData.discordUser
+DiscordName.Font = Enum.Font.Gotham
+DiscordName.TextSize = 12
+DiscordName.TextColor3 = Color3.fromRGB(180, 180, 180)
+DiscordName.TextXAlignment = Enum.TextXAlignment.Left
 
--- Status
-local StatusBox = Instance.new("Frame")
-StatusBox.Parent = HomeTab
-StatusBox.Size = UDim2.new(1, 0, 0, 80)
-StatusBox.Position = UDim2.new(0, 0, 0, 70)
-StatusBox.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+-- Status Card
+local StatusCard = Instance.new("Frame")
+StatusCard.Parent = HomeTab
+StatusCard.Size = UDim2.new(1, 0, 0, 90)
+StatusCard.Position = UDim2.new(0, 0, 0, 80)
+StatusCard.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
 
 local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0, 6)
-StatusCorner.Parent = StatusBox
+StatusCorner.CornerRadius = UDim.new(0, 8)
+StatusCorner.Parent = StatusCard
 
-local function createStatusRow(parent, y, label, value)
+-- Helper function for status rows
+local function createStatusRow(parent, y, label, default)
     local lbl = Instance.new("TextLabel")
     lbl.Parent = parent
-    lbl.Size = UDim2.new(0, 80, 0, 20)
+    lbl.Size = UDim2.new(0, 70, 0, 20)
     lbl.Position = UDim2.new(0, 10, 0, y)
     lbl.BackgroundTransparency = 1
     lbl.Text = label
@@ -329,9 +384,9 @@ local function createStatusRow(parent, y, label, value)
     local val = Instance.new("TextLabel")
     val.Parent = parent
     val.Size = UDim2.new(0, 150, 0, 20)
-    val.Position = UDim2.new(0, 100, 0, y)
+    val.Position = UDim2.new(0, 90, 0, y)
     val.BackgroundTransparency = 1
-    val.Text = value
+    val.Text = default
     val.Font = Enum.Font.GothamBold
     val.TextSize = 12
     val.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -340,28 +395,28 @@ local function createStatusRow(parent, y, label, value)
     return val
 end
 
-local matchStatus = createStatusRow(StatusBox, 10, "Match:", "🔴 Waiting")
-local turnStatus = createStatusRow(StatusBox, 35, "Turn:", "⏳ -")
-local wordStatus = createStatusRow(StatusBox, 60, "Kata:", "📝 -")
+local MatchStatus = createStatusRow(StatusCard, 10, "Match:", "🔴 Waiting")
+local TurnStatus = createStatusRow(StatusCard, 35, "Turn:", "⏳ -")
+local WordStatus = createStatusRow(StatusCard, 60, "Word:", "📝 -")
 
 -- =========================
--- TAB 2: AUTO
+-- AUTO TAB
 -- =========================
 local AutoTab = Instance.new("Frame")
 AutoTab.Parent = TabContainer
 AutoTab.Size = UDim2.new(1, 0, 1, 0)
 AutoTab.BackgroundTransparency = 1
 AutoTab.Visible = false
-tabContents["⚙️"] = AutoTab
+TabContents["⚙️"] = AutoTab
 
 -- Auto Toggle
 local ToggleFrame = Instance.new("Frame")
 ToggleFrame.Parent = AutoTab
-ToggleFrame.Size = UDim2.new(1, 0, 0, 40)
-ToggleFrame.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+ToggleFrame.Size = UDim2.new(1, 0, 0, 45)
+ToggleFrame.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
 
 local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(0, 6)
+ToggleCorner.CornerRadius = UDim.new(0, 8)
 ToggleCorner.Parent = ToggleFrame
 
 local ToggleLabel = Instance.new("TextLabel")
@@ -401,21 +456,22 @@ ToggleBtn.Parent = ToggleBg
 ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
 ToggleBtn.BackgroundTransparency = 1
 ToggleBtn.Text = ""
+
 ToggleBtn.MouseButton1Click:Connect(function()
     ToggleState = not ToggleState
     if ToggleState then
-        TweenService:Create(ToggleBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 80, 140)}):Play()
-        TweenService:Create(ToggleCircle, TweenInfo.new(0.2), {Position = UDim2.new(0, 24, 0.5, -9)}):Play()
+        ToggleBg.BackgroundColor3 = Color3.fromRGB(255, 80, 140)
+        ToggleCircle:TweenPosition(UDim2.new(0, 24, 0.5, -9), "Out", "Quad", 0.2)
         autoEnabled = true
         if matchActive and isMyTurn then startUltraAI() end
     else
-        TweenService:Create(ToggleBg, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
-        TweenService:Create(ToggleCircle, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -9)}):Play()
+        ToggleBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        ToggleCircle:TweenPosition(UDim2.new(0, 2, 0.5, -9), "Out", "Quad", 0.2)
         autoEnabled = false
     end
 end)
 
--- Slider function
+-- Sliders
 local function createSlider(parent, name, min, max, default, y, callback)
     local label = Instance.new("TextLabel")
     label.Parent = parent
@@ -425,14 +481,14 @@ local function createSlider(parent, name, min, max, default, y, callback)
     label.Text = name .. ": " .. default
     label.Font = Enum.Font.Gotham
     label.TextSize = 12
-    label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    label.TextColor3 = Color3.fromRGB(150, 150, 150)
     label.TextXAlignment = Enum.TextXAlignment.Left
     
     local sliderBg = Instance.new("Frame")
     sliderBg.Parent = parent
     sliderBg.Size = UDim2.new(0, 200, 0, 6)
-    sliderBg.Position = UDim2.new(0, 10, 0, y + 20)
-    sliderBg.BackgroundColor3 = Color3.fromRGB(50, 52, 60)
+    sliderBg.Position = UDim2.new(0, 10, 0, y + 18)
+    sliderBg.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
     
     local sliderCorner = Instance.new("UICorner")
     sliderCorner.CornerRadius = UDim.new(0, 3)
@@ -456,6 +512,7 @@ local function createSlider(parent, name, min, max, default, y, callback)
     valueLabel.Font = Enum.Font.GothamBold
     valueLabel.TextSize = 12
     valueLabel.TextColor3 = Color3.fromRGB(255, 80, 140)
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Left
     
     local dragging = false
     sliderBg.InputBegan:Connect(function(input)
@@ -463,11 +520,13 @@ local function createSlider(parent, name, min, max, default, y, callback)
             dragging = true
         end
     end)
+    
     sliderBg.InputEnded:Connect(function()
         dragging = false
     end)
+    
     UserInputService.InputChanged:Connect(function(input)
-        if dragging then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local mousePos = UserInputService:GetMouseLocation()
             local sliderPos = sliderBg.AbsolutePosition
             local sliderSize = sliderBg.AbsoluteSize.X
@@ -481,29 +540,29 @@ local function createSlider(parent, name, min, max, default, y, callback)
     end)
 end
 
-createSlider(AutoTab, "Agresivitas", 0, 100, config.aggression, 50, function(v) config.aggression = v end)
-createSlider(AutoTab, "Min Delay", 50, 500, config.minDelay, 100, function(v) config.minDelay = v end)
-createSlider(AutoTab, "Max Delay", 200, 1500, config.maxDelay, 150, function(v) config.maxDelay = v end)
-createSlider(AutoTab, "Min Panjang", 1, 3, config.minLength, 200, function(v) config.minLength = v end)
-createSlider(AutoTab, "Max Panjang", 5, 20, config.maxLength, 250, function(v) config.maxLength = v end)
+createSlider(AutoTab, "Agresivitas", 0, 100, config.aggression, 55, function(v) config.aggression = v end)
+createSlider(AutoTab, "Min Delay", 50, 500, config.minDelay, 110, function(v) config.minDelay = v end)
+createSlider(AutoTab, "Max Delay", 200, 1500, config.maxDelay, 165, function(v) config.maxDelay = v end)
+createSlider(AutoTab, "Min Panjang", 1, 3, config.minLength, 220, function(v) config.minLength = v end)
+createSlider(AutoTab, "Max Panjang", 5, 20, config.maxLength, 275, function(v) config.maxLength = v end)
 
 -- =========================
--- TAB 3: WORDS
+-- WORDS TAB
 -- =========================
 local WordsTab = Instance.new("Frame")
 WordsTab.Parent = TabContainer
 WordsTab.Size = UDim2.new(1, 0, 1, 0)
 WordsTab.BackgroundTransparency = 1
 WordsTab.Visible = false
-tabContents["📋"] = WordsTab
+TabContents["📋"] = WordsTab
 
 local WordsBox = Instance.new("Frame")
 WordsBox.Parent = WordsTab
 WordsBox.Size = UDim2.new(1, 0, 0, 150)
-WordsBox.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+WordsBox.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
 
 local WordsCorner = Instance.new("UICorner")
-WordsCorner.CornerRadius = UDim.new(0, 6)
+WordsCorner.CornerRadius = UDim.new(0, 8)
 WordsCorner.Parent = WordsBox
 
 local WordsList = Instance.new("TextLabel")
@@ -511,7 +570,7 @@ WordsList.Parent = WordsBox
 WordsList.Size = UDim2.new(1, -20, 1, -20)
 WordsList.Position = UDim2.new(0, 10, 0, 10)
 WordsList.BackgroundTransparency = 1
-WordsList.Text = "Belum ada kata terpakai"
+WordsList.Text = "📋 Belum ada kata terpakai"
 WordsList.Font = Enum.Font.Gotham
 WordsList.TextSize = 12
 WordsList.TextColor3 = Color3.fromRGB(180, 180, 180)
@@ -524,37 +583,37 @@ ResetBtn.Parent = WordsTab
 ResetBtn.Size = UDim2.new(1, 0, 0, 35)
 ResetBtn.Position = UDim2.new(0, 0, 0, 160)
 ResetBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 140)
-ResetBtn.Text = "🔄 Reset Used Words"
+ResetBtn.Text = "🔄 Reset Kata Terpakai"
 ResetBtn.Font = Enum.Font.GothamBold
 ResetBtn.TextSize = 12
 ResetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 local ResetCorner = Instance.new("UICorner")
-ResetCorner.CornerRadius = UDim.new(0, 6)
+ResetCorner.CornerRadius = UDim.new(0, 8)
 ResetCorner.Parent = ResetBtn
 
 ResetBtn.MouseButton1Click:Connect(function()
     resetUsedWords()
-    WordsList.Text = "Belum ada kata terpakai"
+    WordsList.Text = "📋 Belum ada kata terpakai"
 end)
 
 -- =========================
--- TAB 4: INFO
+-- INFO TAB
 -- =========================
 local InfoTab = Instance.new("Frame")
 InfoTab.Parent = TabContainer
 InfoTab.Size = UDim2.new(1, 0, 1, 0)
 InfoTab.BackgroundTransparency = 1
 InfoTab.Visible = false
-tabContents["ℹ️"] = InfoTab
+TabContents["ℹ️"] = InfoTab
 
 local InfoBox = Instance.new("Frame")
 InfoBox.Parent = InfoTab
-InfoBox.Size = UDim2.new(1, 0, 0, 200)
-InfoBox.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
+InfoBox.Size = UDim2.new(1, 0, 0, 250)
+InfoBox.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
 
 local InfoCorner = Instance.new("UICorner")
-InfoCorner.CornerRadius = UDim.new(0, 6)
+InfoCorner.CornerRadius = UDim.new(0, 8)
 InfoCorner.Parent = InfoBox
 
 local InfoText = Instance.new("TextLabel")
@@ -564,22 +623,28 @@ InfoText.Position = UDim2.new(0, 10, 0, 10)
 InfoText.BackgroundTransparency = 1
 InfoText.Text = string.format(
 [[✨ LYORA SAMBUNG KATA
-━━━━━━━━━━━━━━━━
-Versi    : 3.0
-Author   : sazaraaax
-Wordlist : %d kata
+━━━━━━━━━━━━━━━━━━
+Version   : 3.0
+Author    : sazaraaax
+Wordlist  : %d kata
 
-👤 %s
-💬 %s
+👤 Roblox   : %s
+💬 Discord  : %s
+📊 Status   : ✅ Whitelisted
 
-⚡ Fitur:
-• Auto Farm AI
-• Filter kata
+⚡ FITUR:
+• Auto Farm dengan AI
 • Real-time status
-• Whitelist system
+• Filter panjang kata
+• Anti kata berulang
+• 4 Tab menu
+• Minimizable GUI
 
-🔹 /whitelist di Discord
-🔹 Berlaku 7 jam
+📌 CARA PAKAI:
+1. Aktifkan Auto Farm
+2. Atur agresivitas
+3. Biarkan bot bekerja
+4. Pantau di tab Home
 ]], #kataModule, LocalPlayer.Name, userData.discordUser)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 12
@@ -590,17 +655,17 @@ InfoText.TextYAlignment = Enum.TextYAlignment.Top
 -- =========================
 -- TAB NAVIGATION
 -- =========================
-for i, btn in ipairs(tabButtons) do
+for i, btn in ipairs(TabButtons) do
     btn.MouseButton1Click:Connect(function()
-        for _, b in ipairs(tabButtons) do
-            b.BackgroundColor3 = Color3.fromRGB(40, 42, 50)
+        for _, b in ipairs(TabButtons) do
+            b.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
         end
         btn.BackgroundColor3 = Color3.fromRGB(255, 80, 140)
         
-        for name, frame in pairs(tabContents) do
+        for name, frame in pairs(TabContents) do
             frame.Visible = false
         end
-        tabContents[btn.Text].Visible = true
+        TabContents[btn.Text].Visible = true
     end)
 end
 
@@ -612,32 +677,38 @@ MatchUI.OnClientEvent:Connect(function(cmd, value)
         matchActive = true
         isMyTurn = false
         resetUsedWords()
-        matchStatus.Text = "🟢 In Game"
+        MatchStatus.Text = "🟢 In Game"
     elseif cmd == "HideMatchUI" then
         matchActive = false
         isMyTurn = false
         serverLetter = ""
         resetUsedWords()
-        matchStatus.Text = "🔴 Waiting"
-        turnStatus.Text = "⏳ -"
-        wordStatus.Text = "📝 -"
+        MatchStatus.Text = "🔴 Waiting"
+        TurnStatus.Text = "⏳ -"
+        WordStatus.Text = "📝 -"
     elseif cmd == "StartTurn" then
         isMyTurn = true
-        turnStatus.Text = "🎯 Your Turn"
+        TurnStatus.Text = "🎯 Your Turn"
         if autoEnabled then startUltraAI() end
     elseif cmd == "EndTurn" then
         isMyTurn = false
-        turnStatus.Text = "⏳ Opponent"
+        TurnStatus.Text = "⏳ Opponent"
     elseif cmd == "UpdateServerLetter" then
         serverLetter = value or ""
-        wordStatus.Text = "📝 " .. serverLetter
+        WordStatus.Text = "📝 " .. serverLetter
     end
 end)
 
 UsedWordWarn.OnClientEvent:Connect(function(word)
     if word then
         addUsedWord(word)
-        WordsList.Text = "📋 Kata terpakai:\n" .. table.concat(usedWordsList, ", ")
+        local display = "📋 Kata terpakai:\n"
+        for i, w in ipairs(usedWordsList) do
+            display = display .. w
+            if i < #usedWordsList then display = display .. ", " end
+            if i % 5 == 0 then display = display .. "\n" end
+        end
+        WordsList.Text = display
         if autoEnabled and matchActive and isMyTurn then
             humanDelay()
             startUltraAI()
@@ -655,4 +726,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ LYORA CUSTOM GUI LOADED")
+-- =========================
+-- FINISH
+-- =========================
+print("✅ LYORA CUSTOM GUI LOADED - Welcome " .. userData.discordUser)
