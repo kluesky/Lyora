@@ -1,38 +1,28 @@
 -- =========================================================
--- LYORA CHEAT SCRIPT (LOADED AFTER VERIFICATION)
+-- LYORA SAMBUNG KATA - AUTO FARM (RAYFIELD)
 -- =========================================================
 
 if game:IsLoaded() == false then
     game.Loaded:Wait()
 end
 
--- AMBIL USER DATA DARI VERIFICATION
-local userData = _G.LyoraUserData or {
-    userId = tostring(game.Players.LocalPlayer.UserId),
-    username = game.Players.LocalPlayer.Name,
-    discordUser = "Unknown"
-}
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-print("✅ Cheat script loaded for: " .. userData.discordUser)
-
--- =========================
--- LOAD LIBRARY (GANTI SESUAI KEINGINAN)
--- =========================
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/adamowaissi22-boop/Axom-Scripts-/refs/heads/main/Axion%20Ui%20Library"))()
-
--- =========================
--- SERVICES
--- =========================
+-- Services
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- =========================
--- WORDLIST
--- =========================
-local kataModule = {}
+-- Ambil data user dari verification
+local userData = _G.LyoraUserData or {
+    discordUser = "Unknown",
+    username = LocalPlayer.Name
+}
 
+-- Load wordlist
+local kataModule = {}
 local function downloadWordlist()
     local response = game:HttpGet("https://raw.githubusercontent.com/danzzy1we/roblox-script-dump/refs/heads/main/WordListDump/Dump_IndonesianWords.lua")
     if not response then return false end
@@ -52,17 +42,11 @@ local function downloadWordlist()
     return true
 end
 
-local wordOk = downloadWordlist()
-if not wordOk or #kataModule == 0 then
-    warn("Wordlist gagal dimuat!")
-    return
-end
+downloadWordlist()
+print("Wordlist Loaded:", #kataModule)
 
--- =========================
--- REMOTES
--- =========================
+-- Remotes
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
-
 local MatchUI = remotes:WaitForChild("MatchUI")
 local SubmitWord = remotes:WaitForChild("SubmitWord")
 local BillboardUpdate = remotes:WaitForChild("BillboardUpdate")
@@ -70,17 +54,13 @@ local BillboardEnd = remotes:WaitForChild("BillboardEnd")
 local TypeSound = remotes:WaitForChild("TypeSound")
 local UsedWordWarn = remotes:WaitForChild("UsedWordWarn")
 
--- =========================
--- STATE
--- =========================
+-- State
 local matchActive = false
 local isMyTurn = false
 local serverLetter = ""
-
 local usedWords = {}
 local usedWordsList = {}
 local opponentStreamWord = ""
-
 local autoEnabled = false
 local autoRunning = false
 
@@ -92,9 +72,7 @@ local config = {
     maxLength = 12
 }
 
--- =========================
--- LOGIC FUNCTIONS
--- =========================
+-- Logic Functions
 local function isUsed(word)
     return usedWords[string.lower(word)] == true
 end
@@ -142,9 +120,7 @@ local function humanDelay()
     task.wait(math.random(min, max) / 1000)
 end
 
--- =========================
--- AUTO ENGINE
--- =========================
+-- Auto Engine
 local function startUltraAI()
     if autoRunning then return end
     if not autoEnabled then return end
@@ -193,163 +169,156 @@ local function startUltraAI()
     autoRunning = false
 end
 
--- =========================
--- CREATE MAIN GUI (AXION UI)
--- =========================
-local Window = Library:CreateWindow({
+-- Create Main Window
+local Window = Rayfield:CreateWindow({
     Name = "LYORA SAMBUNG KATA",
-    Subtitle = "Premium Auto Farm | " .. userData.discordUser,
-    Size = UDim2.new(0, 650, 0, 450),
-    Position = UDim2.new(0.5, -325, 0.5, -225),
-    Theme = "Default",
-    Draggable = true,
-    MinimizeEnabled = true
+    LoadingTitle = "Auto Farm System",
+    LoadingSubtitle = "Welcome " .. userData.discordUser,
+    ConfigurationSaving = { Enabled = true }
 })
 
--- HOME TAB
-local HomeTab = Window:CreateTab("🏠 Home")
+-- Main Tab
+local MainTab = Window:CreateTab("🏠 Main", "home")
 
-HomeTab:CreateParagraph({
-    Title = "Welcome",
-    Content = "User: " .. userData.discordUser .. "\nStatus: ✅ Whitelisted"
-})
+MainTab:CreateParagraph("👤 Account", 
+    string.format("Discord: %s\nRoblox: %s\nStatus: ✅ Whitelisted",
+        userData.discordUser,
+        LocalPlayer.Name
+    )
+)
 
--- AUTO TAB
-local AutoTab = Window:CreateTab("⚙️ Auto Farm")
+-- Status
+local StatusSection = MainTab:CreateSection("Game Status")
 
--- Status Panel
-local StatusPanel = AutoTab:CreateSection("Game Status")
+local MatchStatus = MainTab:CreateParagraph("Match", "🔴 Waiting")
+local TurnStatus = MainTab:CreateParagraph("Turn", "⏳ -")
+local WordStatus = MainTab:CreateParagraph("Current Word", "📝 -")
+local UsedCount = MainTab:CreateParagraph("Used Words", "📋 0")
 
-local MatchStatus = StatusPanel:AddElement("TextLabel", {
-    Position = UDim2.new(0, 10, 0, 10),
-    Text = "🔴 Match: Waiting",
-    TextColor = Color3.fromRGB(255, 100, 100)
-})
+-- Auto Tab
+local AutoTab = Window:CreateTab("⚙️ Auto Farm", "settings")
 
-local TurnStatus = StatusPanel:AddElement("TextLabel", {
-    Position = UDim2.new(0, 10, 0, 40),
-    Text = "⏳ Turn: -",
-    TextColor = Color3.fromRGB(255, 255, 0)
-})
-
-local CurrentWord = StatusPanel:AddElement("TextLabel", {
-    Position = UDim2.new(0, 10, 0, 70),
-    Text = "📝 Word: -",
-    TextColor = Color3.fromRGB(180, 180, 180)
-})
-
--- Auto Settings
-local AutoSection = AutoTab:CreateSection("Auto Settings")
-
-AutoSection:AddToggle({
+AutoTab:CreateToggle({
     Name = "Enable Auto Farm",
-    Default = false,
-    Callback = function(state)
-        autoEnabled = state
-        if state and matchActive and isMyTurn then
+    CurrentValue = false,
+    Callback = function(v)
+        autoEnabled = v
+        if v and matchActive and isMyTurn then
             startUltraAI()
         end
     end
 })
 
-AutoSection:AddSlider({
+AutoTab:CreateSlider({
     Name = "Aggression",
-    Min = 0, Max = 100,
-    Default = config.aggression,
-    Callback = function(v) config.aggression = v end
+    Range = {0, 100},
+    Increment = 5,
+    CurrentValue = config.aggression,
+    Callback = function(v)
+        config.aggression = v
+    end
 })
 
-AutoSection:AddSlider({
+AutoTab:CreateSlider({
     Name = "Min Delay (ms)",
-    Min = 50, Max = 500,
-    Default = config.minDelay,
-    Callback = function(v) config.minDelay = v end
+    Range = {50, 500},
+    Increment = 10,
+    CurrentValue = config.minDelay,
+    Callback = function(v)
+        config.minDelay = v
+    end
 })
 
-AutoSection:AddSlider({
+AutoTab:CreateSlider({
     Name = "Max Delay (ms)",
-    Min = 200, Max = 1500,
-    Default = config.maxDelay,
-    Callback = function(v) config.maxDelay = v end
+    Range = {200, 1500},
+    Increment = 10,
+    CurrentValue = config.maxDelay,
+    Callback = function(v)
+        config.maxDelay = v
+    end
 })
 
-AutoSection:AddSlider({
+AutoTab:CreateSlider({
     Name = "Min Word Length",
-    Min = 1, Max = 3,
-    Default = config.minLength,
-    Callback = function(v) config.minLength = v end
+    Range = {1, 3},
+    Increment = 1,
+    CurrentValue = config.minLength,
+    Callback = function(v)
+        config.minLength = v
+    end
 })
 
-AutoSection:AddSlider({
+AutoTab:CreateSlider({
     Name = "Max Word Length",
-    Min = 5, Max = 20,
-    Default = config.maxLength,
-    Callback = function(v) config.maxLength = v end
+    Range = {5, 20},
+    Increment = 1,
+    CurrentValue = config.maxLength,
+    Callback = function(v)
+        config.maxLength = v
+    end
 })
 
--- WORDS TAB
-local WordsTab = Window:CreateTab("📋 Words")
+-- Words Tab
+local WordsTab = Window:CreateTab("📋 Words", "list")
 
-local UsedList = WordsTab:AddElement("TextLabel", {
-    Size = UDim2.new(1, -20, 0, 100),
-    BackgroundColor = Color3.fromRGB(20, 25, 35),
-    Text = "No words used yet",
-    Font = "Gotham",
-    TextSize = 13,
-    TextColor = Color3.fromRGB(180, 180, 180)
+local UsedDropdown = WordsTab:CreateDropdown({
+    Name = "Used Words List",
+    Options = usedWordsList,
+    CurrentOption = "",
+    Callback = function() end
 })
 
 WordsTab:CreateButton({
     Name = "Reset Used Words",
     Callback = function()
         resetUsedWords()
-        UsedList.Text = "No words used yet"
+        UsedDropdown:Set({})
+        Rayfield:Notify({
+            Title = "Reset",
+            Content = "Used words has been reset",
+            Duration = 2
+        })
     end
 })
 
--- INFO TAB
-local InfoTab = Window:CreateTab("ℹ️ Info")
+-- Info Tab
+local InfoTab = Window:CreateTab("ℹ️ Info", "info")
 
-InfoTab:CreateParagraph({
-    Title = "Script Information",
-    Content = string.format(
-        "Lyora Sambung Kata\nVersion: 3.0\nAuthor: sazaraaax\nUser: %s\nDiscord: %s",
+InfoTab:CreateParagraph("Script Info",
+    string.format(
+        "Lyora Sambung Kata\nVersion: 3.0\nAuthor: sazaraaax\n\nUser: %s\nDiscord: %s\nWordlist: %d words",
         LocalPlayer.Name,
-        userData.discordUser
+        userData.discordUser,
+        #kataModule
     )
-})
+)
 
--- =========================
--- REMOTE EVENT HANDLERS
--- =========================
+-- Remote Events
 MatchUI.OnClientEvent:Connect(function(cmd, value)
     if cmd == "ShowMatchUI" then
         matchActive = true
         isMyTurn = false
         resetUsedWords()
-        MatchStatus.Text = "🟢 Match: Active"
-        MatchStatus.TextColor = Color3.fromRGB(0, 255, 0)
+        MatchStatus:Set("🟢 Active")
     elseif cmd == "HideMatchUI" then
         matchActive = false
         isMyTurn = false
         serverLetter = ""
         resetUsedWords()
-        MatchStatus.Text = "🔴 Match: Waiting"
-        MatchStatus.TextColor = Color3.fromRGB(255, 100, 100)
-        TurnStatus.Text = "⏳ Turn: -"
-        CurrentWord.Text = "📝 Word: -"
+        MatchStatus:Set("🔴 Waiting")
+        TurnStatus:Set("⏳ -")
+        WordStatus:Set("📝 -")
     elseif cmd == "StartTurn" then
         isMyTurn = true
-        TurnStatus.Text = "🎯 Turn: Your Turn"
-        TurnStatus.TextColor = Color3.fromRGB(0, 255, 0)
+        TurnStatus:Set("🎯 Your Turn")
         if autoEnabled then startUltraAI() end
     elseif cmd == "EndTurn" then
         isMyTurn = false
-        TurnStatus.Text = "⏳ Turn: Opponent"
-        TurnStatus.TextColor = Color3.fromRGB(255, 255, 0)
+        TurnStatus:Set("⏳ Opponent")
     elseif cmd == "UpdateServerLetter" then
         serverLetter = value or ""
-        CurrentWord.Text = "📝 Word: " .. serverLetter
+        WordStatus:Set("📝 " .. serverLetter)
     end
 end)
 
@@ -362,11 +331,8 @@ end)
 UsedWordWarn.OnClientEvent:Connect(function(word)
     if word then
         addUsedWord(word)
-        local displayText = "Used Words:\n"
-        for i, w in ipairs(usedWordsList) do
-            displayText = displayText .. w .. (i < #usedWordsList and ", " or "")
-        end
-        UsedList.Text = displayText
+        UsedCount:Set("📋 " .. #usedWordsList)
+        UsedDropdown:Set(usedWordsList)
         if autoEnabled and matchActive and isMyTurn then
             humanDelay()
             startUltraAI()
@@ -374,9 +340,7 @@ UsedWordWarn.OnClientEvent:Connect(function(word)
     end
 end)
 
--- =========================
--- KEYBIND
--- =========================
+-- Keybind
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
@@ -384,4 +348,4 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ LYORA CHEAT SCRIPT LOADED")
+print("✅ CHEAT SCRIPT LOADED FOR: " .. userData.discordUser)
