@@ -1,319 +1,270 @@
--- =========================================================
--- LYORA VERIFICATION - MINIMALIS CUSTOM
--- =========================================================
+-- LYORA VERIFICATION - MINI EDITION
 
-if game:IsLoaded() == false then
-    game.Loaded:Wait()
-end
+-- Tunggu game load
+repeat wait() until game:IsLoaded()
 
--- =========================
--- SERVICES
--- =========================
+-- Services
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- =========================
--- CONFIG
--- =========================
+-- Config
 local WHITELIST_URL = "https://pastefy.app/EvFSBcDy/raw"
 local DISCORD_INVITE = "cvaHe2rXnk"
-local CHEAT_SCRIPT_URL = "https://pastebin.com/raw/XXXXXXXX"  -- GANTI NANTI!
+local CHEAT_URL = "https://pastebin.com/raw/XXXXXXXX" -- GANTI!
 
+-- Data
 local userData = {
     userId = tostring(LocalPlayer.UserId),
-    username = LocalPlayer.Name,
-    isWhitelisted = false,
-    discordUser = ""
+    username = LocalPlayer.Name
 }
 
--- =========================
--- FUNGSI CEK WHITELIST
--- =========================
-local function checkWhitelist()
-    local success, response = pcall(function()
+-- Fungsi cek whitelist
+local function cekWhitelist()
+    local sukses, res = pcall(function()
         return game:HttpGet(WHITELIST_URL)
     end)
+    if not sukses then return false, "Gagal konek" end
     
-    if not success then
-        return { valid = false, msg = "Gagal ambil data" }
-    end
-    
-    local success, data = pcall(function()
-        return HttpService:JSONDecode(response)
+    local sukses, data = pcall(function()
+        return HttpService:JSONDecode(res)
     end)
+    if not sukses then return false, "Data error" end
     
-    if not success then
-        return { valid = false, msg = "Data rusak" }
-    end
-    
-    if not data or not data.whitelist then
-        return { valid = false, msg = "Database error" }
-    end
+    if not data or not data.whitelist then return false, "DB error" end
     
     local entry = data.whitelist[userData.userId]
+    if not entry then return false, "Tidak terdaftar" end
     
-    if not entry then
-        return { valid = false, msg = "Tidak terdaftar" }
-    end
+    if os.time()*1000 > entry.expiresAt then return false, "Expired" end
     
-    if os.time() * 1000 > entry.expiresAt then
-        return { valid = false, msg = "Expired" }
-    end
+    if entry.username ~= userData.username then return false, "Username salah" end
     
-    if string.lower(entry.username) ~= string.lower(userData.username) then
-        return { valid = false, msg = "Username salah" }
-    end
-    
-    return {
-        valid = true,
-        discordUser = entry.discordTag or entry.discordName or "User",
-        msg = "Selamat datang!"
-    }
+    return true, entry.discordTag or "User"
 end
 
--- =========================
--- GUI MINI
--- =========================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = PlayerGui
-ScreenGui.Name = "LyoraVerify"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Parent = PlayerGui
+gui.Name = "LyoraVerify"
+gui.ResetOnSpawn = false
 
--- MAIN FRAME (KECIL)
-local MainFrame = Instance.new("Frame")
-MainFrame.Parent = ScreenGui
-MainFrame.Size = UDim2.new(0, 280, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -140, 0.5, -160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.ClipsDescendants = true
+-- Frame utama
+local frame = Instance.new("Frame")
+frame.Parent = gui
+frame.Size = UDim2.new(0, 260, 0, 280)
+frame.Position = UDim2.new(0.5, -130, 0.5, -140)
+frame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+frame.Active = true
+frame.Draggable = true
 
--- Corner
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = MainFrame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
 
--- Header Mini
-local Header = Instance.new("Frame")
-Header.Parent = MainFrame
-Header.Size = UDim2.new(1, 0, 0, 35)
-Header.BackgroundColor3 = Color3.fromRGB(255, 90, 160)
-Header.BorderSizePixel = 0
+-- Header
+local header = Instance.new("Frame")
+header.Parent = frame
+header.Size = UDim2.new(1, 0, 0, 30)
+header.BackgroundColor3 = Color3.fromRGB(255, 80, 140)
 
-local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 12)
-HeaderCorner.Parent = Header
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 10)
+headerCorner.Parent = header
 
--- Title
-local Title = Instance.new("TextLabel")
-Title.Parent = Header
-Title.Size = UDim2.new(1, -30, 1, 0)
-Title.Position = UDim2.new(0, 12, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "LYORA"
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextXAlignment = Enum.TextXAlignment.Left
+local title = Instance.new("TextLabel")
+title.Parent = header
+title.Size = UDim2.new(1, -30, 1, 0)
+title.Position = UDim2.new(0, 10, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "LYORA"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextXAlignment = "Left"
 
--- Close
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Parent = Header
-CloseBtn.Size = UDim2.new(0, 25, 0, 25)
-CloseBtn.Position = UDim2.new(1, -30, 0.5, -12.5)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-CloseBtn.Text = "✕"
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 14
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+local close = Instance.new("TextButton")
+close.Parent = header
+close.Size = UDim2.new(0, 20, 0, 20)
+close.Position = UDim2.new(1, -25, 0.5, -10)
+close.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+close.Text = "✕"
+close.Font = Enum.Font.GothamBold
+close.TextSize = 12
+close.TextColor3 = Color3.new(1, 1, 1)
 
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6)
-CloseCorner.Parent = CloseBtn
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 4)
+closeCorner.Parent = close
 
-CloseBtn.MouseButton1Click:Connect(function()
-    ScreenGui:Destroy()
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
 end)
 
--- CONTENT
-local Content = Instance.new("Frame")
-Content.Parent = MainFrame
-Content.Size = UDim2.new(1, -20, 1, -50)
-Content.Position = UDim2.new(0, 10, 0, 45)
-Content.BackgroundTransparency = 1
+-- Content
+local content = Instance.new("Frame")
+content.Parent = frame
+content.Size = UDim2.new(1, -20, 1, -40)
+content.Position = UDim2.new(0, 10, 0, 35)
+content.BackgroundTransparency = 1
 
--- Avatar Mini
-local Avatar = Instance.new("ImageLabel")
-Avatar.Parent = Content
-Avatar.Size = UDim2.new(0, 50, 0, 50)
-Avatar.Position = UDim2.new(0.5, -25, 0, 5)
-Avatar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-Avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420"
+-- Avatar
+local avatar = Instance.new("ImageLabel")
+avatar.Parent = content
+avatar.Size = UDim2.new(0, 45, 0, 45)
+avatar.Position = UDim2.new(0.5, -22.5, 0, 5)
+avatar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420"
 
-local AvatarCorner = Instance.new("UICorner")
-AvatarCorner.CornerRadius = UDim.new(0, 25)
-AvatarCorner.Parent = Avatar
+local avatarCorner = Instance.new("UICorner")
+avatarCorner.CornerRadius = UDim.new(0, 23)
+avatarCorner.Parent = avatar
 
--- Username
-local Username = Instance.new("TextLabel")
-Username.Parent = Content
-Username.Size = UDim2.new(1, 0, 0, 20)
-Username.Position = UDim2.new(0, 0, 0, 65)
-Username.BackgroundTransparency = 1
-Username.Text = LocalPlayer.Name
-Username.Font = Enum.Font.GothamBold
-Username.TextSize = 14
-Username.TextColor3 = Color3.fromRGB(255, 255, 255)
+-- Nama
+local nameLabel = Instance.new("TextLabel")
+nameLabel.Parent = content
+nameLabel.Size = UDim2.new(1, 0, 0, 20)
+nameLabel.Position = UDim2.new(0, 0, 0, 55)
+nameLabel.BackgroundTransparency = 1
+nameLabel.Text = LocalPlayer.Name
+nameLabel.Font = Enum.Font.GothamBold
+nameLabel.TextSize = 12
+nameLabel.TextColor3 = Color3.new(1, 1, 1)
 
--- Status Box
-local StatusBox = Instance.new("Frame")
-StatusBox.Parent = Content
-StatusBox.Size = UDim2.new(1, 0, 0, 30)
-StatusBox.Position = UDim2.new(0, 0, 0, 95)
-StatusBox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
+-- Status box
+local statusBox = Instance.new("Frame")
+statusBox.Parent = content
+statusBox.Size = UDim2.new(1, 0, 0, 28)
+statusBox.Position = UDim2.new(0, 0, 0, 80)
+statusBox.BackgroundColor3 = Color3.fromRGB(25, 25, 33)
 
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0, 6)
-StatusCorner.Parent = StatusBox
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(0, 5)
+statusCorner.Parent = statusBox
 
-local StatusText = Instance.new("TextLabel")
-StatusText.Parent = StatusBox
-StatusText.Size = UDim2.new(1, -10, 1, 0)
-StatusText.Position = UDim2.new(0, 5, 0, 0)
-StatusText.BackgroundTransparency = 1
-StatusText.Text = "⚪ Menunggu"
-StatusText.Font = Enum.Font.Gotham
-StatusText.TextSize = 12
-StatusText.TextColor3 = Color3.fromRGB(200, 200, 200)
+local statusText = Instance.new("TextLabel")
+statusText.Parent = statusBox
+statusText.Size = UDim2.new(1, -10, 1, 0)
+statusText.Position = UDim2.new(0, 5, 0, 0)
+statusText.BackgroundTransparency = 1
+statusText.Text = "⚪ Ready"
+statusText.Font = Enum.Font.Gotham
+statusText.TextSize = 11
+statusText.TextColor3 = Color3.fromRGB(200, 200, 200)
 
--- Verify Button
-local VerifyBtn = Instance.new("TextButton")
-VerifyBtn.Parent = Content
-VerifyBtn.Size = UDim2.new(1, 0, 0, 35)
-VerifyBtn.Position = UDim2.new(0, 0, 0, 135)
-VerifyBtn.BackgroundColor3 = Color3.fromRGB(255, 90, 160)
-VerifyBtn.Text = "VERIFIKASI"
-VerifyBtn.Font = Enum.Font.GothamBold
-VerifyBtn.TextSize = 13
-VerifyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+-- Tombol verify
+local verifyBtn = Instance.new("TextButton")
+verifyBtn.Parent = content
+verifyBtn.Size = UDim2.new(1, 0, 0, 32)
+verifyBtn.Position = UDim2.new(0, 0, 0, 115)
+verifyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 140)
+verifyBtn.Text = "VERIFY"
+verifyBtn.Font = Enum.Font.GothamBold
+verifyBtn.TextSize = 12
+verifyBtn.TextColor3 = Color3.new(1, 1, 1)
 
-local VerifyCorner = Instance.new("UICorner")
-VerifyCorner.CornerRadius = UDim.new(0, 6)
-VerifyCorner.Parent = VerifyBtn
+local verifyCorner = Instance.new("UICorner")
+verifyCorner.CornerRadius = UDim.new(0, 5)
+verifyCorner.Parent = verifyBtn
 
--- Discord Button
-local DiscordBtn = Instance.new("TextButton")
-DiscordBtn.Parent = Content
-DiscordBtn.Size = UDim2.new(1, 0, 0, 30)
-DiscordBtn.Position = UDim2.new(0, 0, 0, 180)
-DiscordBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
-DiscordBtn.Text = "🔗 Discord"
-DiscordBtn.Font = Enum.Font.Gotham
-DiscordBtn.TextSize = 12
-DiscordBtn.TextColor3 = Color3.fromRGB(200, 200, 255)
+-- Tombol discord
+local dcBtn = Instance.new("TextButton")
+dcBtn.Parent = content
+dcBtn.Size = UDim2.new(1, 0, 0, 28)
+dcBtn.Position = UDim2.new(0, 0, 0, 155)
+dcBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
+dcBtn.Text = "🔗 Discord"
+dcBtn.Font = Enum.Font.Gotham
+dcBtn.TextSize = 11
+dcBtn.TextColor3 = Color3.fromRGB(200, 200, 255)
 
-local DiscordCorner = Instance.new("UICorner")
-DiscordCorner.CornerRadius = UDim.new(0, 6)
-DiscordCorner.Parent = DiscordBtn
+local dcCorner = Instance.new("UICorner")
+dcCorner.CornerRadius = UDim.new(0, 5)
+dcCorner.Parent = dcBtn
 
--- Info kecil
-local Info = Instance.new("TextLabel")
-Info.Parent = Content
-Info.Size = UDim2.new(1, 0, 0, 40)
-Info.Position = UDim2.new(0, 0, 0, 220)
-Info.BackgroundTransparency = 1
-Info.Text = "whitelist 7jam • /whitelist"
-Info.Font = Enum.Font.Gotham
-Info.TextSize = 10
-Info.TextColor3 = Color3.fromRGB(140, 140, 140)
+-- Info
+local infoText = Instance.new("TextLabel")
+infoText.Parent = content
+infoText.Size = UDim2.new(1, 0, 0, 20)
+infoText.Position = UDim2.new(0, 0, 0, 190)
+infoText.BackgroundTransparency = 1
+infoText.Text = "whitelist 7 jam • /whitelist"
+infoText.Font = Enum.Font.Gotham
+infoText.TextSize = 9
+infoText.TextColor3 = Color3.fromRGB(120, 120, 120)
 
--- =========================
--- NOTIF SEDERHANA
--- =========================
-local function notif(msg, good)
-    local notifFrame = Instance.new("Frame")
-    notifFrame.Parent = ScreenGui
-    notifFrame.Size = UDim2.new(0, 200, 0, 30)
-    notifFrame.Position = UDim2.new(0.5, -100, 0, 10)
-    notifFrame.BackgroundColor3 = good and Color3.fromRGB(40, 180, 90) or Color3.fromRGB(200, 60, 60)
-    notifFrame.ZIndex = 10
-
-    local notifCorner = Instance.new("UICorner")
-    notifCorner.CornerRadius = UDim.new(0, 6)
-    notifCorner.Parent = notifFrame
-
-    local notifText = Instance.new("TextLabel")
-    notifText.Parent = notifFrame
-    notifText.Size = UDim2.new(1, -10, 1, 0)
-    notifText.Position = UDim2.new(0, 5, 0, 0)
-    notifText.BackgroundTransparency = 1
-    notifText.Text = msg
-    notifText.Font = Enum.Font.GothamBold
-    notifText.TextSize = 12
-    notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
-
+-- Notif
+local function notif(teks, sukses)
+    local n = Instance.new("Frame")
+    n.Parent = gui
+    n.Size = UDim2.new(0, 180, 0, 28)
+    n.Position = UDim2.new(0.5, -90, 0, 10)
+    n.BackgroundColor3 = sukses and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(180, 0, 0)
+    n.ZIndex = 10
+    
+    local nCorner = Instance.new("UICorner")
+    nCorner.CornerRadius = UDim.new(0, 5)
+    nCorner.Parent = n
+    
+    local nText = Instance.new("TextLabel")
+    nText.Parent = n
+    nText.Size = UDim2.new(1, -10, 1, 0)
+    nText.Position = UDim2.new(0, 5, 0, 0)
+    nText.BackgroundTransparency = 1
+    nText.Text = teks
+    nText.Font = Enum.Font.GothamBold
+    nText.TextSize = 11
+    nText.TextColor3 = Color3.new(1, 1, 1)
+    
     task.wait(2)
-    notifFrame:Destroy()
+    n:Destroy()
 end
 
--- =========================
--- VERIFY
--- =========================
-VerifyBtn.MouseButton1Click:Connect(function()
-    StatusText.Text = "⏳ Verifying..."
-    VerifyBtn.Text = "..."
-    VerifyBtn.BackgroundColor3 = Color3.fromRGB(140, 140, 140)
+-- Event verify
+verifyBtn.MouseButton1Click:Connect(function()
+    statusText.Text = "⏳ Verifying..."
+    verifyBtn.Text = "..."
+    verifyBtn.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
     
-    local result = checkWhitelist()
+    local valid, res = cekWhitelist()
     
-    if result.valid then
-        userData.isWhitelisted = true
-        userData.discordUser = result.discordUser
+    if valid then
+        userData.discordUser = res
+        statusText.Text = "✅ Verified"
+        verifyBtn.Text = "DONE"
+        verifyBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 0)
+        notif("✅ Verified!", true)
         
-        StatusText.Text = "✅ Verified"
-        StatusText.TextColor3 = Color3.fromRGB(100, 255, 120)
-        VerifyBtn.Text = "✓ DONE"
-        VerifyBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 90)
-        
-        notif("✅ " .. result.msg, true)
-        
-        -- Simpan & load cheat
         _G.LyoraUserData = userData
-        
         task.wait(1)
-        ScreenGui:Destroy()
+        gui:Destroy()
         
-        local cheat = game:HttpGet(CHEAT_SCRIPT_URL)
+        local cheat = game:HttpGet(CHEAT_URL)
         if cheat then
             loadstring(cheat)()
         end
     else
-        StatusText.Text = "❌ " .. result.msg
-        StatusText.TextColor3 = Color3.fromRGB(255, 100, 100)
-        VerifyBtn.Text = "VERIFIKASI"
-        VerifyBtn.BackgroundColor3 = Color3.fromRGB(255, 90, 160)
-        notif("❌ " .. result.msg, false)
+        statusText.Text = "❌ " .. res
+        verifyBtn.Text = "VERIFY"
+        verifyBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 140)
+        notif("❌ " .. res, false)
     end
 end)
 
--- Discord button
-DiscordBtn.MouseButton1Click:Connect(function()
+-- Event discord
+dcBtn.MouseButton1Click:Connect(function()
     setclipboard("https://discord.gg/" .. DISCORD_INVITE)
-    notif("🔗 Link Discord dicopy", true)
+    notif("🔗 Copied!", true)
 end)
 
--- Keybind toggle
-UserInputService.InputBegan:Connect(function(input, gp)
+-- Keybind
+UserInputService.InputBegan:Connect(function(inp, gp)
     if gp then return end
-    if input.KeyCode == Enum.KeyCode.RightShift then
-        ScreenGui.Enabled = not ScreenGui.Enabled
+    if inp.KeyCode == Enum.KeyCode.RightShift then
+        gui.Enabled = not gui.Enabled
     end
 end)
 
-print("✅ LYORA VERIF MINI LOADED")
+print("✅ Lyora Verify Mini")
