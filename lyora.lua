@@ -21,7 +21,7 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 -- =========================
 local WHITELIST_URL = "https://pastefy.app/EvFSBcDy/raw"
 local DISCORD_INVITE = "cvaHe2rXnk"
-local CHEAT_SCRIPT_URL = "https://pastebin.com/raw/XXXXXXXX"  -- GANTI DENGAN URL RAW CHEAT LU!
+local CHEAT_SCRIPT_URL = "https://raw.githubusercontent.com/kluesky/Lyora/refs/heads/main/gago.lua"  -- GANTI DENGAN URL RAW CHEAT LU!
 
 local userData = {
     userId = tostring(LocalPlayer.UserId),
