@@ -1,5 +1,5 @@
 -- =========================================================
--- LYORA SAMBUNG KATA - AUTO FARM (RAYFIELD)
+-- LYORA SAMBUNG KATA - RAYFIELD EDITION
 -- =========================================================
 
 if game:IsLoaded() == false then
@@ -15,7 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Ambil data user dari verification
+-- Ambil data dari verification
 local userData = _G.LyoraUserData or {
     discordUser = "Unknown",
     username = LocalPlayer.Name
@@ -42,8 +42,15 @@ local function downloadWordlist()
     return true
 end
 
-downloadWordlist()
-print("Wordlist Loaded:", #kataModule)
+local wordlistOk = downloadWordlist()
+if not wordlistOk or #kataModule == 0 then
+    Rayfield:Notify({
+        Title = "Error",
+        Content = "Gagal load wordlist!",
+        Duration = 3
+    })
+    return
+end
 
 -- Remotes
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
@@ -72,14 +79,14 @@ local config = {
     maxLength = 12
 }
 
--- Logic Functions
+-- Logic functions
 local function isUsed(word)
     return usedWords[string.lower(word)] == true
 end
 
 local function addUsedWord(word)
     local w = string.lower(word)
-    if usedWords[w] == nil then
+    if not usedWords[w] then
         usedWords[w] = true
         table.insert(usedWordsList, word)
     end
@@ -106,7 +113,7 @@ local function getSmartWords(prefix)
         end
     end
 
-    table.sort(results, function(a,b)
+    table.sort(results, function(a, b)
         return string.len(a) > string.len(b)
     end)
 
@@ -169,12 +176,17 @@ local function startUltraAI()
     autoRunning = false
 end
 
--- Create Main Window
+-- Create Rayfield Window
 local Window = Rayfield:CreateWindow({
     Name = "LYORA SAMBUNG KATA",
     LoadingTitle = "Auto Farm System",
     LoadingSubtitle = "Welcome " .. userData.discordUser,
-    ConfigurationSaving = { Enabled = true }
+    ConfigurationSaving = { Enabled = true },
+    Discord = {
+        Enabled = true,
+        Invite = "cvaHe2rXnk",
+        RememberJoins = true
+    }
 })
 
 -- Main Tab
@@ -196,7 +208,7 @@ local WordStatus = MainTab:CreateParagraph("Current Word", "📝 -")
 local UsedCount = MainTab:CreateParagraph("Used Words", "📋 0")
 
 -- Auto Tab
-local AutoTab = Window:CreateTab("⚙️ Auto Farm", "settings")
+local AutoTab = Window:CreateTab("⚙️ Auto", "settings")
 
 AutoTab:CreateToggle({
     Name = "Enable Auto Farm",
@@ -274,9 +286,10 @@ WordsTab:CreateButton({
     Callback = function()
         resetUsedWords()
         UsedDropdown:Set({})
+        UsedCount:Set("📋 0")
         Rayfield:Notify({
             Title = "Reset",
-            Content = "Used words has been reset",
+            Content = "Used words cleared",
             Duration = 2
         })
     end
@@ -294,7 +307,11 @@ InfoTab:CreateParagraph("Script Info",
     )
 )
 
--- Remote Events
+InfoTab:CreateParagraph("How to Use",
+    "1. Get whitelist via /whitelist\n2. Verify with mini GUI\n3. Enable Auto Farm\n4. Let it play!"
+)
+
+-- Remote event handlers
 MatchUI.OnClientEvent:Connect(function(cmd, value)
     if cmd == "ShowMatchUI" then
         matchActive = true
@@ -309,10 +326,14 @@ MatchUI.OnClientEvent:Connect(function(cmd, value)
         MatchStatus:Set("🔴 Waiting")
         TurnStatus:Set("⏳ -")
         WordStatus:Set("📝 -")
+        UsedCount:Set("📋 0")
+        UsedDropdown:Set({})
     elseif cmd == "StartTurn" then
         isMyTurn = true
         TurnStatus:Set("🎯 Your Turn")
-        if autoEnabled then startUltraAI() end
+        if autoEnabled then
+            startUltraAI()
+        end
     elseif cmd == "EndTurn" then
         isMyTurn = false
         TurnStatus:Set("⏳ Opponent")
@@ -340,7 +361,7 @@ UsedWordWarn.OnClientEvent:Connect(function(word)
     end
 end)
 
--- Keybind
+-- Keybind toggle
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
@@ -348,4 +369,11 @@ UserInputService.InputBegan:Connect(function(input, gp)
     end
 end)
 
-print("✅ CHEAT SCRIPT LOADED FOR: " .. userData.discordUser)
+-- Welcome notif
+Rayfield:Notify({
+    Title = "Welcome " .. userData.discordUser,
+    Content = "Auto Farm Ready!",
+    Duration = 3
+})
+
+print("✅ LYORA RAYFIELD CHEAT LOADED")
