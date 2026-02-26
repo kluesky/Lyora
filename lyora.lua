@@ -1,15 +1,10 @@
 -- =========================================================
--- LYORA SAMBUNG KATA - AXION UI + WHITELIST + AUTO FARM
+-- LYORA VERIFICATION SYSTEM
 -- =========================================================
 
 if game:IsLoaded() == false then
     game.Loaded:Wait()
 end
-
--- =========================
--- LOAD AXION UI LIBRARY
--- =========================
-local AxionLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/adamowaissi22-boop/Axom-Scripts-/refs/heads/main/Axion%20Ui%20Library"))()
 
 -- =========================
 -- SERVICES
@@ -18,15 +13,15 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- =========================
--- WHITELIST SYSTEM
+-- WHITELIST CONFIG
 -- =========================
 local WHITELIST_URL = "https://pastefy.app/EvFSBcDy/raw"
 local DISCORD_INVITE = "cvaHe2rXnk"
+local CHEAT_SCRIPT_URL = "https://pastebin.com/raw/XXXXXXXX"  -- GANTI DENGAN URL RAW CHEAT LU!
 
 local userData = {
     userId = tostring(LocalPlayer.UserId),
@@ -87,20 +82,20 @@ local function checkWhitelist()
 end
 
 -- =========================
--- CREATE VERIFICATION GUI (MANUAL DULU)
+-- CREATE VERIFICATION GUI
 -- =========================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Parent = PlayerGui
-ScreenGui.Name = "LyoraGUI"
+ScreenGui.Name = "LyoraVerify"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- MAIN FRAME VERIF
+-- MAIN FRAME
 local MainFrame = Instance.new("Frame")
 MainFrame.Parent = ScreenGui
 MainFrame.Size = UDim2.new(0, 400, 0, 450)
 MainFrame.Position = UDim2.new(0.5, -200, 0.5, -225)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 17, 25)
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
@@ -109,26 +104,60 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = MainFrame
 
--- Header
+-- Shadow
+local Shadow = Instance.new("ImageLabel")
+Shadow.Parent = MainFrame
+Shadow.BackgroundTransparency = 1
+Shadow.Position = UDim2.new(0, -10, 0, -10)
+Shadow.Size = UDim2.new(1, 20, 1, 20)
+Shadow.Image = "rbxassetid://1316045217"
+Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.ImageTransparency = 0.8
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+
+-- HEADER
 local Header = Instance.new("Frame")
 Header.Parent = MainFrame
-Header.Size = UDim2.new(1, 0, 0, 60)
+Header.Size = UDim2.new(1, 0, 0, 70)
 Header.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
 
 local HeaderCorner = Instance.new("UICorner")
 HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
+local HeaderGradient = Instance.new("UIGradient")
+HeaderGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 105, 180)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 80, 150))
+})
+HeaderGradient.Rotation = 90
+HeaderGradient.Parent = Header
+
+-- Title
 local Title = Instance.new("TextLabel")
 Title.Parent = Header
-Title.Size = UDim2.new(1, -20, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Size = UDim2.new(1, -20, 0, 40)
+Title.Position = UDim2.new(0, 10, 0, 15)
 Title.BackgroundTransparency = 1
-Title.Text = "LYORA WHITELIST SYSTEM"
+Title.Text = "LYORA VERIFICATION"
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 20
+Title.TextSize = 24
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Subtitle
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Parent = Header
+Subtitle.Size = UDim2.new(1, -20, 0, 20)
+Subtitle.Position = UDim2.new(0, 10, 0, 45)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "Whitelist System • 7 Jam"
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.TextSize = 12
+Subtitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+Subtitle.TextTransparency = 0.3
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
 
 -- Close Button
 local CloseBtn = Instance.new("TextButton")
@@ -149,14 +178,14 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
--- Content Frame
+-- CONTENT FRAME
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Parent = MainFrame
-ContentFrame.Size = UDim2.new(1, -20, 1, -80)
-ContentFrame.Position = UDim2.new(0, 10, 0, 70)
+ContentFrame.Size = UDim2.new(1, -20, 1, -90)
+ContentFrame.Position = UDim2.new(0, 10, 0, 80)
 ContentFrame.BackgroundTransparency = 1
 
--- Profile Card
+-- PROFILE CARD
 local ProfileCard = Instance.new("Frame")
 ProfileCard.Parent = ContentFrame
 ProfileCard.Size = UDim2.new(1, 0, 0, 80)
@@ -178,6 +207,7 @@ local AvatarCorner = Instance.new("UICorner")
 AvatarCorner.CornerRadius = UDim.new(0, 30)
 AvatarCorner.Parent = Avatar
 
+-- Username
 local UsernameLabel = Instance.new("TextLabel")
 UsernameLabel.Parent = ProfileCard
 UsernameLabel.Size = UDim2.new(0, 250, 0, 25)
@@ -189,18 +219,31 @@ UsernameLabel.TextSize = 18
 UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+-- Display Name
+local DisplayNameLabel = Instance.new("TextLabel")
+DisplayNameLabel.Parent = ProfileCard
+DisplayNameLabel.Size = UDim2.new(0, 250, 0, 20)
+DisplayNameLabel.Position = UDim2.new(0, 80, 0, 40)
+DisplayNameLabel.BackgroundTransparency = 1
+DisplayNameLabel.Text = LocalPlayer.DisplayName
+DisplayNameLabel.Font = Enum.Font.Gotham
+DisplayNameLabel.TextSize = 12
+DisplayNameLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+DisplayNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- User ID
 local UserIdLabel = Instance.new("TextLabel")
 UserIdLabel.Parent = ProfileCard
 UserIdLabel.Size = UDim2.new(0, 250, 0, 20)
-UserIdLabel.Position = UDim2.new(0, 80, 0, 45)
+UserIdLabel.Position = UDim2.new(0, 80, 0, 60)
 UserIdLabel.BackgroundTransparency = 1
 UserIdLabel.Text = "ID: " .. LocalPlayer.UserId
 UserIdLabel.Font = Enum.Font.Gotham
 UserIdLabel.TextSize = 12
-UserIdLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+UserIdLabel.TextColor3 = Color3.fromRGB(140, 140, 140)
 UserIdLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Status
+-- STATUS CARD
 local StatusCard = Instance.new("Frame")
 StatusCard.Parent = ContentFrame
 StatusCard.Size = UDim2.new(1, 0, 0, 60)
@@ -232,7 +275,7 @@ StatusText.TextSize = 14
 StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
 StatusText.TextXAlignment = Enum.TextXAlignment.Left
 
--- Verify Button
+-- VERIFY BUTTON
 local VerifyBtn = Instance.new("TextButton")
 VerifyBtn.Parent = ContentFrame
 VerifyBtn.Size = UDim2.new(1, 0, 0, 50)
@@ -247,10 +290,10 @@ local VerifyCorner = Instance.new("UICorner")
 VerifyCorner.CornerRadius = UDim.new(0, 8)
 VerifyCorner.Parent = VerifyBtn
 
--- Info Card
+-- INFO CARD
 local InfoCard = Instance.new("Frame")
 InfoCard.Parent = ContentFrame
-InfoCard.Size = UDim2.new(1, 0, 0, 80)
+InfoCard.Size = UDim2.new(1, 0, 0, 100)
 InfoCard.Position = UDim2.new(0, 0, 0, 220)
 InfoCard.BackgroundColor3 = Color3.fromRGB(30, 32, 40)
 
@@ -260,8 +303,8 @@ InfoCorner.Parent = InfoCard
 
 local InfoText = Instance.new("TextLabel")
 InfoText.Parent = InfoCard
-InfoText.Size = UDim2.new(1, -20, 1, -10)
-InfoText.Position = UDim2.new(0, 10, 0, 5)
+InfoText.Size = UDim2.new(1, -20, 0, 50)
+InfoText.Position = UDim2.new(0, 10, 0, 10)
 InfoText.BackgroundTransparency = 1
 InfoText.Text = "• Whitelist berlaku 7 jam\n• Dapatkan whitelist di Discord\n• Gunakan /whitelist di bot"
 InfoText.Font = Enum.Font.Gotham
@@ -309,13 +352,14 @@ local function showNotification(message, isSuccess)
     notifText.Font = Enum.Font.GothamBold
     notifText.TextSize = 14
     notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    notifText.TextWrapped = true
 
     task.wait(3)
     notif:Destroy()
 end
 
+-- =========================
 -- VERIFY FUNCTION
+-- =========================
 VerifyBtn.MouseButton1Click:Connect(function()
     StatusIcon.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
     StatusText.Text = "⏳ Memverifikasi whitelist..."
@@ -329,11 +373,19 @@ VerifyBtn.MouseButton1Click:Connect(function()
         
         StatusIcon.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
         StatusText.Text = "✅ " .. result.message
-        showNotification("✅ Verifikasi berhasil!", true)
+        showNotification("Verifikasi berhasil!", true)
         
+        -- SIMPAN DATA USER SEMENTARA (pake shared table)
+        _G.LyoraUserData = userData
+        
+        -- LOAD CHEAT SCRIPT
         task.wait(1)
         ScreenGui:Destroy()
-        createMainGUI()
+        
+        local cheatScript = game:HttpGet(CHEAT_SCRIPT_URL)
+        if cheatScript then
+            loadstring(cheatScript)()
+        end
         
     else
         StatusIcon.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
@@ -348,509 +400,14 @@ DiscordBtn.MouseButton1Click:Connect(function()
 end)
 
 -- =========================
--- LOAD WORDLIST
--- =========================
-local kataModule = {}
-
-local function downloadWordlist()
-    local response = game:HttpGet("https://raw.githubusercontent.com/danzzy1we/roblox-script-dump/refs/heads/main/WordListDump/Dump_IndonesianWords.lua")
-    if not response then
-        return false
-    end
-
-    local content = string.match(response, "return%s*(.+)")
-    if not content then
-        return false
-    end
-
-    content = string.gsub(content, "^%s*{", "")
-    content = string.gsub(content, "}%s*$", "")
-
-    for word in string.gmatch(content, '"([^"]+)"') do
-        local w = string.lower(word)
-        if string.len(w) > 1 then
-            table.insert(kataModule, w)
-        end
-    end
-
-    return true
-end
-
-local wordOk = downloadWordlist()
-if not wordOk or #kataModule == 0 then
-    warn("Wordlist gagal dimuat!")
-    return
-end
-
-print("Wordlist Loaded:", #kataModule)
-
--- =========================
--- REMOTES
--- =========================
-local remotes = ReplicatedStorage:WaitForChild("Remotes")
-
-local MatchUI = remotes:WaitForChild("MatchUI")
-local SubmitWord = remotes:WaitForChild("SubmitWord")
-local BillboardUpdate = remotes:WaitForChild("BillboardUpdate")
-local BillboardEnd = remotes:WaitForChild("BillboardEnd")
-local TypeSound = remotes:WaitForChild("TypeSound")
-local UsedWordWarn = remotes:WaitForChild("UsedWordWarn")
-
--- =========================
--- STATE
--- =========================
-local matchActive = false
-local isMyTurn = false
-local serverLetter = ""
-
-local usedWords = {}
-local usedWordsList = {}
-local opponentStreamWord = ""
-
-local autoEnabled = false
-local autoRunning = false
-
-local config = {
-    minDelay = 350,
-    maxDelay = 650,
-    aggression = 20,
-    minLength = 2,
-    maxLength = 12
-}
-
--- =========================
--- LOGIC FUNCTIONS
--- =========================
-local function isUsed(word)
-    return usedWords[string.lower(word)] == true
-end
-
-local function addUsedWord(word)
-    local w = string.lower(word)
-    if usedWords[w] == nil then
-        usedWords[w] = true
-        table.insert(usedWordsList, word)
-    end
-end
-
-local function resetUsedWords()
-    usedWords = {}
-    usedWordsList = {}
-end
-
-local function getSmartWords(prefix)
-    local results = {}
-    local lowerPrefix = string.lower(prefix)
-
-    for i = 1, #kataModule do
-        local word = kataModule[i]
-        if string.sub(word, 1, #lowerPrefix) == lowerPrefix then
-            if not isUsed(word) then
-                local len = string.len(word)
-                if len >= config.minLength and len <= config.maxLength then
-                    table.insert(results, word)
-                end
-            end
-        end
-    end
-
-    table.sort(results, function(a,b)
-        return string.len(a) > string.len(b)
-    end)
-
-    return results
-end
-
-local function humanDelay()
-    local min = config.minDelay
-    local max = config.maxDelay
-    if min > max then
-        min = max
-    end
-    task.wait(math.random(min, max) / 1000)
-end
-
--- =========================
--- AUTO ENGINE
--- =========================
-local function startUltraAI()
-    if autoRunning then return end
-    if not autoEnabled then return end
-    if not matchActive then return end
-    if not isMyTurn then return end
-    if serverLetter == "" then return end
-
-    autoRunning = true
-
-    humanDelay()
-
-    local words = getSmartWords(serverLetter)
-    if #words == 0 then
-        autoRunning = false
-        return
-    end
-
-    local selectedWord = words[1]
-
-    if config.aggression < 100 then
-        local topN = math.floor(#words * (1 - config.aggression/100))
-        if topN < 1 then topN = 1 end
-        if topN > #words then topN = #words end
-        selectedWord = words[math.random(1, topN)]
-    end
-
-    local currentWord = serverLetter
-    local remain = string.sub(selectedWord, #serverLetter + 1)
-
-    for i = 1, string.len(remain) do
-        if not matchActive or not isMyTurn then
-            autoRunning = false
-            return
-        end
-
-        currentWord = currentWord .. string.sub(remain, i, i)
-
-        TypeSound:FireServer()
-        BillboardUpdate:FireServer(currentWord)
-
-        humanDelay()
-    end
-
-    humanDelay()
-
-    SubmitWord:FireServer(selectedWord)
-    addUsedWord(selectedWord)
-
-    humanDelay()
-    BillboardEnd:FireServer()
-
-    autoRunning = false
-end
-
--- =========================
--- CREATE MAIN GUI (AXION UI)
--- =========================
-function createMainGUI()
-    -- Cleanup existing GUI
-    for _, child in ipairs(ScreenGui:GetChildren()) do
-        child:Destroy()
-    end
-    
-    -- Create Axion Window
-    local Window = AxionLibrary:CreateWindow({
-        Name = "LYORA SAMBUNG KATA",
-        Subtitle = "Premium Auto Farm System",
-        Size = UDim2.new(0, 650, 0, 450),
-        Position = UDim2.new(0.5, -325, 0.5, -225),
-        Theme = "Default",
-        Draggable = true,
-        MinimizeEnabled = true
-    })
-    
-    -- =========================
-    -- HOME TAB
-    -- =========================
-    local HomeTab = Window:CreateTab("🏠 Home")
-    
-    -- Profile Section
-    local ProfileSection = HomeTab:CreateSection("Profile")
-    
-    local ProfileCard = ProfileSection:AddElement("Frame", {
-        Size = UDim2.new(1, -20, 0, 80),
-        BackgroundColor = Color3.fromRGB(30, 35, 45),
-        BorderRadius = 8
-    })
-    
-    local AvatarImg = ProfileCard:AddElement("ImageLabel", {
-        Size = UDim2.new(0, 60, 0, 60),
-        Position = UDim2.new(0, 10, 0.5, -30),
-        Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=420&h=420",
-        BorderRadius = 30
-    })
-    
-    ProfileCard:AddElement("TextLabel", {
-        Size = UDim2.new(0, 200, 0, 25),
-        Position = UDim2.new(0, 80, 0, 15),
-        Text = LocalPlayer.Name,
-        Font = "GothamBold",
-        TextSize = 18,
-        TextColor = Color3.fromRGB(255, 255, 255)
-    })
-    
-    ProfileCard:AddElement("TextLabel", {
-        Size = UDim2.new(0, 200, 0, 20),
-        Position = UDim2.new(0, 80, 0, 45),
-        Text = "ID: " .. LocalPlayer.UserId,
-        Font = "Gotham",
-        TextSize = 12,
-        TextColor = Color3.fromRGB(180, 180, 180)
-    })
-    
-    -- Stats Section
-    local StatsSection = HomeTab:CreateSection("Statistics")
-    
-    local stats = {
-        {label = "Games", value = "0"},
-        {label = "Streak", value = "0"},
-        {label = "Words", value = "0"},
-        {label = "Accuracy", value = "0%"}
-    }
-    
-    for i, stat in ipairs(stats) do
-        local card = StatsSection:AddElement("Frame", {
-            Size = UDim2.new(0, 140, 0, 70),
-            Position = UDim2.new(0, (i-1) * 150, 0, 0),
-            BackgroundColor = Color3.fromRGB(25, 30, 40),
-            BorderRadius = 6
-        })
-        
-        card:AddElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 25),
-            Position = UDim2.new(0, 0, 0, 10),
-            Text = stat.value,
-            Font = "GothamBold",
-            TextSize = 20,
-            TextColor = Color3.fromRGB(255, 105, 180)
-        })
-        
-        card:AddElement("TextLabel", {
-            Size = UDim2.new(1, 0, 0, 20),
-            Position = UDim2.new(0, 0, 0, 40),
-            Text = stat.label,
-            Font = "Gotham",
-            TextSize = 12,
-            TextColor = Color3.fromRGB(150, 150, 150)
-        })
-    end
-    
-    -- Discord Info
-    local DiscordSection = HomeTab:CreateSection("Discord")
-    
-    DiscordSection:AddParagraph({
-        Title = "Connected Account",
-        Content = "Discord: " .. userData.discordUser .. "\nExpires: " .. os.date("%H:%M %d/%m", userData.whitelistExpiry/1000)
-    })
-    
-    -- =========================
-    -- AUTO TAB
-    -- =========================
-    local AutoTab = Window:CreateTab("⚙️ Auto Farm")
-    
-    -- Status Panel
-    local StatusPanel = AutoTab:CreateSection("Game Status")
-    
-    local MatchStatus = StatusPanel:AddElement("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 25),
-        Position = UDim2.new(0, 10, 0, 10),
-        Text = "🔴 Match: Waiting",
-        Font = "Gotham",
-        TextSize = 14,
-        TextColor = Color3.fromRGB(255, 100, 100)
-    })
-    
-    local TurnStatus = StatusPanel:AddElement("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 25),
-        Position = UDim2.new(0, 10, 0, 40),
-        Text = "⏳ Turn: -",
-        Font = "Gotham",
-        TextSize = 14,
-        TextColor = Color3.fromRGB(255, 255, 0)
-    })
-    
-    local CurrentWord = StatusPanel:AddElement("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 25),
-        Position = UDim2.new(0, 10, 0, 70),
-        Text = "📝 Word: -",
-        Font = "Gotham",
-        TextSize = 14,
-        TextColor = Color3.fromRGB(180, 180, 180)
-    })
-    
-    -- Auto Settings
-    local AutoSection = AutoTab:CreateSection("Auto Settings")
-    
-    AutoSection:AddToggle({
-        Name = "Enable Auto Farm",
-        Default = false,
-        Callback = function(state)
-            autoEnabled = state
-            if state and matchActive and isMyTurn then
-                startUltraAI()
-            end
-        end
-    })
-    
-    AutoSection:AddSlider({
-        Name = "Aggression",
-        Min = 0,
-        Max = 100,
-        Default = config.aggression,
-        Callback = function(val)
-            config.aggression = val
-        end
-    })
-    
-    AutoSection:AddSlider({
-        Name = "Min Delay (ms)",
-        Min = 50,
-        Max = 500,
-        Default = config.minDelay,
-        Callback = function(val)
-            config.minDelay = val
-        end
-    })
-    
-    AutoSection:AddSlider({
-        Name = "Max Delay (ms)",
-        Min = 200,
-        Max = 1500,
-        Default = config.maxDelay,
-        Callback = function(val)
-            config.maxDelay = val
-        end
-    })
-    
-    AutoSection:AddSlider({
-        Name = "Min Word Length",
-        Min = 1,
-        Max = 3,
-        Default = config.minLength,
-        Callback = function(val)
-            config.minLength = val
-        end
-    })
-    
-    AutoSection:AddSlider({
-        Name = "Max Word Length",
-        Min = 5,
-        Max = 20,
-        Default = config.maxLength,
-        Callback = function(val)
-            config.maxLength = val
-        end
-    })
-    
-    -- =========================
-    -- WORDS TAB
-    -- =========================
-    local WordsTab = Window:CreateTab("📋 Words")
-    
-    local UsedSection = WordsTab:CreateSection("Used Words")
-    
-    local UsedList = UsedSection:AddElement("TextLabel", {
-        Size = UDim2.new(1, -20, 0, 100),
-        BackgroundColor = Color3.fromRGB(20, 25, 35),
-        Text = "No words used yet",
-        Font = "Gotham",
-        TextSize = 13,
-        TextColor = Color3.fromRGB(180, 180, 180)
-    })
-    
-    WordsTab:CreateButton({
-        Name = "Reset Used Words",
-        Callback = function()
-            resetUsedWords()
-            UsedList.Text = "No words used yet"
-        end
-    })
-    
-    -- =========================
-    -- INFO TAB
-    -- =========================
-    local InfoTab = Window:CreateTab("ℹ️ Info")
-    
-    InfoTab:CreateParagraph({
-        Title = "Script Information",
-        Content = string.format(
-            "Lyora Sambung Kata\nVersion: 3.0\nAuthor: sazaraaax\nLibrary: Axion UI\n\nStatus: ✅ Whitelisted\nUser: %s\nDiscord: %s\n\nFitur:\n• Auto Farm AI\n• Real-time Status\n• Word Filter\n• Whitelist System",
-            LocalPlayer.Name,
-            userData.discordUser
-        )
-    })
-    
-    InfoTab:CreateParagraph({
-        Title = "How to Use",
-        Content = "1. Get whitelist via Discord\n2. Verify automatically\n3. Enable Auto Farm\n4. Let the bot play!"
-    })
-    
-    -- =========================
-    -- REMOTE EVENT HANDLERS
-    -- =========================
-    MatchUI.OnClientEvent:Connect(function(cmd, value)
-        if cmd == "ShowMatchUI" then
-            matchActive = true
-            isMyTurn = false
-            resetUsedWords()
-            MatchStatus.Text = "🟢 Match: Active"
-            MatchStatus.TextColor = Color3.fromRGB(0, 255, 0)
-        elseif cmd == "HideMatchUI" then
-            matchActive = false
-            isMyTurn = false
-            serverLetter = ""
-            resetUsedWords()
-            MatchStatus.Text = "🔴 Match: Waiting"
-            MatchStatus.TextColor = Color3.fromRGB(255, 100, 100)
-            TurnStatus.Text = "⏳ Turn: -"
-            CurrentWord.Text = "📝 Word: -"
-        elseif cmd == "StartTurn" then
-            isMyTurn = true
-            TurnStatus.Text = "🎯 Turn: Your Turn"
-            TurnStatus.TextColor = Color3.fromRGB(0, 255, 0)
-            if autoEnabled then
-                startUltraAI()
-            end
-        elseif cmd == "EndTurn" then
-            isMyTurn = false
-            TurnStatus.Text = "⏳ Turn: Opponent"
-            TurnStatus.TextColor = Color3.fromRGB(255, 255, 0)
-        elseif cmd == "UpdateServerLetter" then
-            serverLetter = value or ""
-            CurrentWord.Text = "📝 Word: " .. serverLetter
-        end
-    end)
-    
-    BillboardUpdate.OnClientEvent:Connect(function(word)
-        if matchActive and not isMyTurn then
-            opponentStreamWord = word or ""
-        end
-    end)
-    
-    UsedWordWarn.OnClientEvent:Connect(function(word)
-        if word then
-            addUsedWord(word)
-            if UsedList then
-                local displayText = "Used Words:\n"
-                for i, w in ipairs(usedWordsList) do
-                    displayText = displayText .. w .. (i < #usedWordsList and ", " or "")
-                    if i % 5 == 0 then
-                        displayText = displayText .. "\n"
-                    end
-                end
-                UsedList.Text = displayText
-            end
-            if autoEnabled and matchActive and isMyTurn then
-                humanDelay()
-                startUltraAI()
-            end
-        end
-    end)
-end
-
--- =========================
 -- KEYBIND TOGGLE
 -- =========================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
-        if ScreenGui and ScreenGui.Parent then
-            ScreenGui.Enabled = not ScreenGui.Enabled
-        end
+        ScreenGui.Enabled = not ScreenGui.Enabled
     end
 end)
 
--- =========================
--- INIT
--- =========================
-print("✅ LYORA AXION UI + WHITELIST SYSTEM LOADED")
-print("📌 User: " .. LocalPlayer.Name)
-print("🔑 User ID: " .. LocalPlayer.UserId)
+print("✅ LYORA VERIFICATION SYSTEM LOADED")
+print("👤 User: " .. LocalPlayer.Name)
