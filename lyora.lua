@@ -200,7 +200,7 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
-MainFrame.Visible = false  -- Awalnya hidden, muncul setelah verifikasi
+MainFrame.Visible = true  -- Awalnya hidden, muncul setelah verifikasi
 
 -- Shadow
 local Shadow = Instance.new("ImageLabel")
